@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "root"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pytest = "^7.1.2"
+black = "^22.6.0"
+feather-format = "^0.4.1"
+pytest-spec = "^3.2.0"
+tqdm = "^4.64.0"
+pybit = "^2.3.1"
+torch = "^1.12.0"
+
+[tool.poetry.dev-dependencies]
+numpy = "^1.23.1"
+pandas = "^1.4.3"
+jupyterlab = "^3.4.3"
+lightgbm = "^3.3.2"
+matplotlib = "^3.5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

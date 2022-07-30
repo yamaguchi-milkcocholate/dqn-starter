@@ -1,0 +1,20 @@
+# referred: https://zuma-lab.com/posts/docker-python-settings
+version: '3'
+services:
+  python:
+    # restart: always
+    # entrypoint: >
+    #   jupyter-lab --allow-root --ip=0.0.0.0 --port=8888 --no-browser
+    #   --NotebookApp.token='' --notebook-dir=/workspace
+    # entrypoint: "jupyter-lab --allow-root --ip=0.0.0.0 --port=8888 --no-browser
+    #   --notebook-dir=/workspace"
+    expose:
+      - "8880"
+    ports:
+      - "8880:8880"
+    build: .
+    container_name: 'dqn-starter'
+    working_dir: '/home/opt'
+    tty: true
+    volumes:
+      - .:/home/opt
