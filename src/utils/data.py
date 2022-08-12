@@ -156,7 +156,7 @@ def add_lag_features(
     return df, features_with_lags
 
 
-def load_bybit_data() -> pd.DataFrame:
+def load_bybit_data() -> Tuple[pd.DataFrame, List[str]]:
     df = _load_bybit_data()
     features = [
         "dsharp_1",
@@ -179,4 +179,4 @@ def load_bybit_data() -> pd.DataFrame:
     train = divide_with_pcs(df=dfa, num_divide=5, division="_pcs_2")
     train = train[train.columns[~train.columns.str.startswith("_")]]
 
-    return train
+    return train, features
