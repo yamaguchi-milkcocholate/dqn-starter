@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 import feather
 import gc
+import pickle as pkl
 from pathlib import Path
 from typing import *
 
 
-def _load_bybit_data():
-    rootdir = Path(__file__).resolve().parent.parent.parent
+def _load_bybit_data(rootdir: Path):
     datadir = rootdir / "data" / "bybit" / "2022-07-24"
 
     dfs = list()
@@ -157,26 +157,39 @@ def add_lag_features(
 
 
 def load_bybit_data() -> Tuple[pd.DataFrame, List[str]]:
-    df = _load_bybit_data()
-    features = [
-        "dsharp_1",
-        "area_1",
-        "change_1",
-        "maxlen_1",
-        "minlen_1",
-        "dsharp_2",
-        "area_2",
-        "change_2",
-        "maxlen_2",
-        "minlen_2",
-        "spread_upper",
-        "spread_lower",
-    ]
+    rootdir = Path(__file__).resolve().parent.parent.parent
+    dfcachedir = rootdir / "data" / "cache" / "df"
+    dfcachedir.mkdir(parents=True, exist_ok=True)
 
-    dfa = add_features(df=df)
-    dfa, features = add_lag_features(df=dfa, features=features, lags=[1, 2, 3])
+    dfpath = dfcachedir / "ppo_df.feather"
+    featurespath = dfcachedir / "ppo_features.pkl"
+    if dfpath.is_file() and featurespath.is_file():
+        train = feather.read_dataframe(dfpath)
+        features = pkl.load(open(featurespath, "rb"))
+    else:
+        df = _load_bybit_data(rootdir=rootdir)
+        features = [
+            "dsharp_1",
+            "area_1",
+            "change_1",
+            "maxlen_1",
+            "minlen_1",
+            "dsharp_2",
+            "area_2",
+            "change_2",
+            "maxlen_2",
+            "minlen_2",
+            "spread_upper",
+            "spread_lower",
+        ]
 
-    train = divide_with_pcs(df=dfa, num_divide=5, division="_pcs_2")
-    train = train[train.columns[~train.columns.str.startswith("_")]]
+        dfa = add_features(df=df)
+        dfa, features = add_lag_features(df=dfa, features=features, lags=[1, 2, 3])
+
+        train = divide_with_pcs(df=dfa, num_divide=5, division="_pcs_2")
+        train = train[train.columns[~train.columns.str.startswith("_")]]
+
+        feather.write_dataframe(train, dfpath)
+        pkl.dump(features, open(featurespath, "wb"))
 
     return train, features
