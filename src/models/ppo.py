@@ -56,11 +56,9 @@ class Actor(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(input_dim, 256),
             nn.Tanh(),
-            nn.Linear(256, 256),
+            nn.Linear(256, 64),
             nn.Tanh(),
-            nn.Linear(256, 256),
-            nn.Tanh(),
-            nn.Linear(256, output_dim),
+            nn.Linear(64, output_dim),
         )
         self.transforms = {
             "softmax": nn.Softmax(dim=1),
@@ -102,11 +100,9 @@ class ActorCritic(nn.Module):
         self.critic = nn.Sequential(
             nn.Linear(state_dim, 256),
             nn.Tanh(),
-            nn.Linear(256, 256),
+            nn.Linear(256, 64),
             nn.Tanh(),
-            nn.Linear(256, 256),
-            nn.Tanh(),
-            nn.Linear(256, 1),
+            nn.Linear(64, 1),
         )
 
         self.softplus = nn.Softplus()
