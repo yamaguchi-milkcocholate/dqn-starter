@@ -75,7 +75,7 @@ def main():
 
     NUM_EPISODES = 10000
     NUM_STEPS = 12 * 24 * 1  # 1ヶ月
-    EVAL_LOG_INTERVAL = 100
+    EVAL_LOG_INTERVAL = 250
     UPDATE_INTERVAL = 10
 
     rootdir = Path(__file__).resolve().parent.parent
