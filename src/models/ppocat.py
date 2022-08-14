@@ -72,18 +72,20 @@ class PPODataset(Dataset):
 class Actor(nn.Module):
     def __init__(self, input_dim: int, channel_dim: int, output_dim: int):
         super(Actor, self).__init__()
-        self.conv1 = nn.Conv1d(channel_dim, 16, kernel_size=1)
-        self.conv2 = nn.Conv1d(16, 16, kernel_size=1)
+        self.conv1 = nn.Conv1d(channel_dim, 256, kernel_size=1)
+        self.conv2 = nn.Conv1d(256, 256, kernel_size=1)
         self.tanh = nn.Tanh()
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(input_dim * 16, output_dim)
+        self.fc1 = nn.Linear(input_dim * 256, 256)
+        self.fc2 = nn.Linear(256, output_dim)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.tanh(self.conv1(x))
         x = self.tanh(self.conv2(x))
         x = self.flatten(x)
-        x = self.fc(x)
+        x = self.tanh(self.fc1(x))
+        x = self.fc2(x)
         x = self.softmax(x)
         return x
 
@@ -91,17 +93,19 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self, input_dim: int, channel_dim: int):
         super(Critic, self).__init__()
-        self.conv1 = nn.Conv1d(channel_dim, 16, kernel_size=1)
-        self.conv2 = nn.Conv1d(16, 16, kernel_size=1)
+        self.conv1 = nn.Conv1d(channel_dim, 256, kernel_size=1)
+        self.conv2 = nn.Conv1d(256, 256, kernel_size=1)
         self.tanh = nn.Tanh()
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(input_dim * 16, 1)
+        self.fc1 = nn.Linear(input_dim * 256, 256)
+        self.fc2 = nn.Linear(256, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.tanh(self.conv1(x))
         x = self.tanh(self.conv2(x))
         x = self.flatten(x)
-        x = self.fc(x)
+        x = self.tanh(self.fc1(x))
+        x = self.fc2(x)
         return x
 
 
