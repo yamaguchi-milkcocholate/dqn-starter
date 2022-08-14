@@ -189,13 +189,13 @@ class Market(object):
 
 
 def random_market(
-    df: pd.DataFrame, features: List[str], num_steps: int, is_eval: bool = False
+    df: pd.DataFrame, features: List[str], num_steps: int, action_params: Dict[str, Any]
 ):
     idx = np.random.randint(df.shape[0] - 2 - num_steps)
     return Market(
         df=df.iloc[idx : idx + num_steps].reset_index(drop=True),
         features=features,
-        is_eval=is_eval,
+        action_params=action_params,
     )
 
 
