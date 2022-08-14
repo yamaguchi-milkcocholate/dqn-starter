@@ -217,7 +217,7 @@ def random_market(
     action_params: Dict[str, Any],
     n_lag: int,
 ):
-    idx = np.random.randint(n_lag, df.shape[0] - 2 - num_steps)
+    idx = np.random.randint(df.shape[0] - 2 - num_steps)
     return Market(
         df=df.iloc[idx : idx + num_steps].reset_index(drop=True),
         features=features,

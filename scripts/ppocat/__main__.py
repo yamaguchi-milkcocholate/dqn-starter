@@ -131,7 +131,7 @@ def main():
             market = markets.random_market(
                 df=df_eval,
                 features=features,
-                num_steps=train_params["NUM_STEPS"],
+                num_steps=train_params["NUM_EVAL_STEPS"],
                 action_params=action_params,
                 n_lag=train_params["N_LAG"],
             )
@@ -211,9 +211,6 @@ def main():
             }
         )
         gc.collect()
-
-    del agent, pool
-    gc.collect()
 
 
 if __name__ == "__main__":
