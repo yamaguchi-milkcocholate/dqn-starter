@@ -38,6 +38,8 @@ class Market(object):
         self.cur_rtn_sum = 0
         self.prices_when_fill = deque()
         self.position_side = None
+        self.first_fill = False
+        self.last_fill = False
 
         self.is_transaction_end = False
 
@@ -73,6 +75,8 @@ class Market(object):
             elif self.os:
                 self.unset_order_sell()
 
+        self.first_fill, self.last_fill = False, False
+
         if self.ob:
             self.step_from_ob += 1
             if self.lb > bthprice:
@@ -81,6 +85,9 @@ class Market(object):
                 self.step_from_ob = 0
                 if self.position_side is None:
                     self.position_side = "Buy"
+                    self.first_fill = True
+                else:
+                    self.last_fill = True
 
         if self.os:
             self.step_from_os += 1
@@ -90,6 +97,9 @@ class Market(object):
                 self.step_from_os = 0
                 if self.position_side is None:
                     self.position_side = "Sell"
+                    self.first_fill = True
+                else:
+                    self.last_fill = True
 
         if self.fb:
             self.step_from_fb += 1
@@ -155,9 +165,19 @@ class Market(object):
 
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
-            return np.log(self.prices[self.i, 0] / self.prices[self.i - 1, 0])
+            if self.first_fill:
+                return np.log(self.prices[self.i, 0] / self.lb)
+            elif self.last_fill:
+                return np.log(self.ls / self.prices[self.i - 1, 0])
+            else:
+                return np.log(self.prices[self.i, 0] / self.prices[self.i - 1, 0])
         elif self.position_side == "Sell":
-            return np.log(self.prices[self.i - 1, 0] / self.prices[self.i, 0])
+            if self.first_fill:
+                return np.log(self.ls / self.prices[self.i, 0])
+            elif self.last_fill:
+                return np.log(self.prices[self.i - 1, 0] / self.lb)
+            else:
+                return np.log(self.prices[self.i - 1, 0] / self.prices[self.i, 0])
         else:
             return np.log(1)
 
