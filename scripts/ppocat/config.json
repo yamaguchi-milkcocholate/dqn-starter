@@ -12,7 +12,9 @@
         "NUM_STEPS": 288,
         "EVAL_LOG_INTERVAL": 2,
         "UPDATE_INTERVAL": 2,
-        "NUM_DEVIDE": 5
+        "NUM_DEVIDE": 5,
+        "LAGS": [],
+        "N_LAG": 5
     },
     "action_params": {
         "NUM_DISCRETE": 5,

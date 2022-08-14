@@ -23,9 +23,9 @@ def _run_episode(
 ) -> Tuple[models.ReplayMemory, deque]:
     memory = models.ReplayMemory()
     rewards = deque()
-    for t in range(market.num_steps):
-        state = torch.tensor(market.state(), device=device, dtype=torch.float32).view(
-            1, -1
+    for _ in range(market.num_steps):
+        state = torch.tensor(
+            market.state()[np.newaxis, :, :], device=device, dtype=torch.float32
         )
 
         action, action_logprob = agent.select_action(state=state)
@@ -63,8 +63,9 @@ def main():
 
     device = torch.device("cpu")
 
-    df, features = data.load_bybit_data(num_devide=train_params["NUM_DEVIDE"])
-
+    df, features = data.load_bybit_data(
+        num_devide=train_params["NUM_DEVIDE"], lags=train_params["LAGS"]
+    )
     n_actions = (action_params["NUM_DISCRETE"] * 2 + 1) * 2 + 2
     state_dim = 9 + len(features)
 
@@ -74,10 +75,15 @@ def main():
     )
 
     agent = models.PPO(
-        state_dim=state_dim, action_dim=n_actions, device=device, params=ppo_params
+        state_dim=state_dim,
+        lag_dim=train_params["N_LAG"],
+        action_dim=n_actions,
+        device=device,
+        params=ppo_params,
     )
 
     num_async = multiprocessing.cpu_count() - 1
+    num_async = 1
     pool = multiprocessing.Pool(num_async)
 
     log = list()
@@ -94,6 +100,7 @@ def main():
                         features=features,
                         num_steps=train_params["NUM_STEPS"],
                         action_params=action_params,
+                        n_lag=train_params["N_LAG"],
                     ),
                     "device": device,
                 }
@@ -124,13 +131,14 @@ def main():
                 features=features,
                 num_steps=train_params["NUM_STEPS"],
                 action_params=action_params,
+                n_lag=train_params["N_LAG"],
             )
 
             rewards = list()
             for _ in range(market.num_steps):
                 state = torch.tensor(
-                    market.state(), device=device, dtype=torch.float32
-                ).view(1, -1)
+                    market.state()[np.newaxis, :, :], device=device, dtype=torch.float32
+                )
 
                 action = agent.select_deterministical_action(state=state)
 

@@ -10,17 +10,22 @@ class Market(object):
         df: pd.DataFrame,
         features: List[str],
         action_params: Dict[str, Any],
+        n_lag: int,
     ):
         self.action_parser = ActionParser(
             num_discrete=action_params["NUM_DISCRETE"],
             max_spread=action_params["MAX_SPREAD"],
         )
+
+        self.n_lag = n_lag
+        self.trader_state_que = deque([np.zeros(9) for _ in range(n_lag)], maxlen=n_lag)
+
         self.market_states_cols = features
         self.market_states = df[self.market_states_cols].values
         self.prices = df[
             ["price", "max_price", "min_price", "buy_price", "sell_price"]
         ].values
-        self.i = 0
+        self.i = n_lag
 
         self.ob, self.os = False, False
         self.fb, self.fs = False, False
@@ -38,7 +43,7 @@ class Market(object):
 
     @property
     def num_steps(self) -> int:
-        return self.prices.shape[0] - 2
+        return self.prices.shape[0] - 2 - self.n_lag
 
     def step(self, action: int) -> Tuple[float, bool]:
         action, spread = self.action_parser.find_action(action=action)
@@ -129,6 +134,23 @@ class Market(object):
             }
         )
         self.i += 1
+
+        self.trader_state_que.append(
+            np.array(
+                [
+                    int(self.ob),
+                    int(self.os),
+                    int(self.fb),
+                    int(self.fs),
+                    cur_rtn,
+                    np.log1p(self.step_from_ob),
+                    np.log1p(self.step_from_os),
+                    np.log1p(self.step_from_fb),
+                    np.log1p(self.step_from_fs),
+                ]
+            )
+        )
+
         return sharp_ratio, self.is_transaction_end
 
     def calc_sharp_ratio(self) -> float:
@@ -160,28 +182,8 @@ class Market(object):
         self.step_from_os = 0
 
     def state(self) -> np.ndarray:
-        if (self.lb is not None) and (self.ls is not None):
-            cur_rtn = self.ls / self.lb - 1
-        elif self.lb is not None:
-            cur_rtn = self.prices[self.i, 0] / self.lb - 1
-        elif self.ls is not None:
-            cur_rtn = self.ls / self.prices[self.i, 0] - 1
-        else:
-            cur_rtn = 0
-        trade_state = np.array(
-            [
-                int(self.ob),
-                int(self.os),
-                int(self.fb),
-                int(self.fs),
-                cur_rtn,
-                np.log1p(self.step_from_ob),
-                np.log1p(self.step_from_os),
-                np.log1p(self.step_from_fb),
-                np.log1p(self.step_from_fs),
-            ]
-        )
-        market_state = self.market_states[self.i]
+        trade_state = np.array(self.trader_state_que)
+        market_state = self.market_states[self.i - self.n_lag + 1 : self.i + 1]
         return np.hstack([trade_state, market_state])
 
     def get_return(self) -> pd.DataFrame:
@@ -189,13 +191,18 @@ class Market(object):
 
 
 def random_market(
-    df: pd.DataFrame, features: List[str], num_steps: int, action_params: Dict[str, Any]
+    df: pd.DataFrame,
+    features: List[str],
+    num_steps: int,
+    action_params: Dict[str, Any],
+    n_lag: int,
 ):
-    idx = np.random.randint(df.shape[0] - 2 - num_steps)
+    idx = np.random.randint(n_lag, df.shape[0] - 2 - num_steps)
     return Market(
         df=df.iloc[idx : idx + num_steps].reset_index(drop=True),
         features=features,
         action_params=action_params,
+        n_lag=n_lag,
     )
 
 

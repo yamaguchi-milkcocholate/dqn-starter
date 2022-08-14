@@ -48,34 +48,61 @@ class ReplayMemory(object):
         return state_batch, action_batch, reward_batch, logprob_batch, is_end_batch
 
 
+class Actor(nn.Module):
+    def __init__(self, input_dim: int, channel_dim: int, output_dim: int):
+        super(Actor, self).__init__()
+        self.conv1 = nn.Conv1d(channel_dim, 16, kernel_size=1)
+        self.conv2 = nn.Conv1d(16, 16, kernel_size=1)
+        self.tanh = nn.Tanh()
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(input_dim * 16, output_dim)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.tanh(self.conv1(x))
+        x = self.tanh(self.conv2(x))
+        x = self.flatten(x)
+        x = self.fc(x)
+        x = self.softmax(x)
+        return x
+
+
+class Critic(nn.Module):
+    def __init__(self, input_dim: int, channel_dim: int):
+        super(Critic, self).__init__()
+        self.conv1 = nn.Conv1d(channel_dim, 16, kernel_size=1)
+        self.conv2 = nn.Conv1d(16, 16, kernel_size=1)
+        self.tanh = nn.Tanh()
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(input_dim * 16, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.tanh(self.conv1(x))
+        x = self.tanh(self.conv2(x))
+        x = self.flatten(x)
+        x = self.fc(x)
+        return x
+
+
 class ActorCritic(nn.Module):
     def __init__(
-        self, state_dim: int, action_dim: int, device: torch.device, spread: float
+        self,
+        state_dim: int,
+        lag_dim: int,
+        action_dim: int,
+        device: torch.device,
     ):
         super(ActorCritic, self).__init__()
         self.state_dim = state_dim
+        self.lag_dim = lag_dim
         self.action_dim = action_dim
 
         self.device = device
 
-        self.actor = nn.Sequential(
-            nn.Linear(state_dim, 64),
-            nn.Tanh(),
-            nn.Linear(64, 64),
-            nn.Tanh(),
-            nn.Linear(64, action_dim),
-            nn.Softmax(dim=-1),
+        self.actor = Actor(
+            input_dim=state_dim, channel_dim=lag_dim, output_dim=action_dim
         )
-
-        self.critic = nn.Sequential(
-            nn.Linear(state_dim, 64),
-            nn.Tanh(),
-            nn.Linear(64, 64),
-            nn.Tanh(),
-            nn.Linear(64, 1),
-        )
-
-        self.softplus = nn.Softplus()
+        self.critic = Critic(input_dim=state_dim, channel_dim=lag_dim)
 
     def forward(self):
         raise NotImplementedError()
@@ -108,6 +135,7 @@ class PPO(object):
     def __init__(
         self,
         state_dim: int,
+        lag_dim: int,
         action_dim: int,
         device: torch.device,
         params: Dict[str, Any],
@@ -122,9 +150,9 @@ class PPO(object):
 
         self.policy = ActorCritic(
             state_dim=state_dim,
+            lag_dim=lag_dim,
             action_dim=action_dim,
             device=device,
-            spread=params["SPREAD"],
         ).to(device)
         self.optimizer = torch.optim.Adam(
             [
@@ -135,9 +163,9 @@ class PPO(object):
 
         self.policy_old = ActorCritic(
             state_dim=state_dim,
+            lag_dim=lag_dim,
             action_dim=action_dim,
             device=device,
-            spread=params["SPREAD"],
         ).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
