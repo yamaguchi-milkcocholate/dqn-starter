@@ -3,6 +3,7 @@ import torch
 import multiprocessing
 import gc
 import sys
+import json
 from pathlib import Path
 from typing import *
 from collections import deque
@@ -51,36 +52,26 @@ def run_episode(args):
 
 
 def main():
+    exptdir = Path(__file__).resolve().parent
+    savedir = exptdir / "out"
+    savedir.mkdir(exist_ok=True, parents=True)
+
+    config = json.load(open(exptdir / "config.json", "r"))
+    ppo_params = config["ppo_params"]
+    train_params = config["train_params"]
+
     device = torch.device("cpu")
 
-    df, features = data.load_bybit_data()
+    df, features = data.load_bybit_data(num_devide=train_params["NUM_DEVIDE"])
 
     actions = np.array(["Hold", "Buy", "Sell", "Cancel"])
     n_actions = 1 + actions.shape[0]
     state_dim = 9 + len(features)
 
     df_train, df_eval = (
-        df.loc[df["fold"] != 4].reset_index(drop=True),
-        df.loc[df["fold"] == 4].reset_index(drop=True),
+        df.loc[df["fold"] != (train_params["NUM_DEVIDE"] - 1)].reset_index(drop=True),
+        df.loc[df["fold"] == (train_params["NUM_DEVIDE"] - 1)].reset_index(drop=True),
     )
-
-    ppo_params = {
-        "GAMMA": 0.999,
-        "EPS_CLIP": 0.2,
-        "K_EPOCHS": 80,
-        "LR_ACTOR": 0.0003,
-        "LR_CRITIC": 0.001,
-        "SPREAD": 0.002,
-    }
-
-    NUM_EPISODES = 3
-    NUM_STEPS = 12 * 24 * 1  # 1ヶ月
-    EVAL_LOG_INTERVAL = 2
-    UPDATE_INTERVAL = 2
-
-    exptdir = Path(__file__).resolve().parent
-    savedir = exptdir / "out"
-    savedir.mkdir(exist_ok=True, parents=True)
 
     agent = models.PPO(
         state_dim=state_dim, action_dim=n_actions, device=device, params=ppo_params
@@ -92,14 +83,16 @@ def main():
     log = list()
     best_reward = -np.inf
     episode_durations = []
-    for i_episode in tqdm(range(NUM_EPISODES)):
+    for i_episode in tqdm(range(train_params["NUM_EPISODES"])):
         params = list()
         for _ in range(num_async):
             params.append(
                 {
                     "agent": agent,
                     "market": markets.random_market(
-                        df=df_train, features=features, num_steps=NUM_STEPS
+                        df=df_train,
+                        features=features,
+                        num_steps=train_params["NUM_STEPS"],
                     ),
                     "device": device,
                 }
@@ -114,7 +107,7 @@ def main():
         del memories, rewards
         gc.collect()
 
-        if (i_episode + 1) % UPDATE_INTERVAL == 0:
+        if (i_episode + 1) % train_params["UPDATE_INTERVAL"] == 0:
             agent.update()
 
         plot.plot(
@@ -124,9 +117,12 @@ def main():
             ylabel="avg reward",
         )
 
-        if (i_episode + 1) % EVAL_LOG_INTERVAL == 0:
+        if (i_episode + 1) % train_params["EVAL_LOG_INTERVAL"] == 0:
             market = markets.random_market(
-                df=df_eval, features=features, num_steps=NUM_STEPS, is_eval=True
+                df=df_eval,
+                features=features,
+                num_steps=train_params["NUM_STEPS"],
+                is_eval=True,
             )
 
             rewards = list()
