@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 from pathlib import Path
 from typing import *
 from collections import namedtuple, deque
@@ -46,6 +47,26 @@ class ReplayMemory(object):
         is_end_batch = np.vstack(batch.is_end)
 
         return state_batch, action_batch, reward_batch, logprob_batch, is_end_batch
+
+
+class PPODataset(Dataset):
+    def __init__(
+        self,
+        state: torch.Tensor,
+        action: torch.Tensor,
+        reward: torch.Tensor,
+        logprob: torch.Tensor,
+    ):
+        self.state = state
+        self.action = action
+        self.reward = reward
+        self.logprob = logprob
+
+    def __len__(self):
+        return len(self.reward)
+
+    def __getitem__(self, idx):
+        return self.state[idx], self.action[idx], self.reward[idx], self.logprob[idx]
 
 
 class Actor(nn.Module):
@@ -145,6 +166,7 @@ class PPO(object):
         self.gamma = params["GAMMA"]
         self.eps_clip = params["EPS_CLIP"]
         self.K_epochs = params["K_EPOCHS"]
+        self.batch_size = params["BATCH_SIZE"]
 
         self.memory = ReplayMemory()
 
@@ -207,37 +229,44 @@ class PPO(object):
             is_end_batch,
         ) = self.memory.get_batches()
 
-        old_rewards = self._calc_cumsum_discount_rewards(
-            reward_batch=reward_batch, is_end_batch=is_end_batch
+        dataloader = DataLoader(
+            PPODataset(
+                state=state_batch.detach().to(self.device),
+                action=action_batch.detach().to(self.device),
+                reward=self._calc_cumsum_discount_rewards(
+                    reward_batch=reward_batch, is_end_batch=is_end_batch
+                ),
+                logprob=logprob_batch.detach().to(self.device),
+            ),
+            batch_size=self.batch_size,
+            shuffle=True,
         )
 
-        old_states = state_batch.detach().to(self.device)
-        old_actions = action_batch.detach().to(self.device)
-        old_logprobs = logprob_batch.detach().to(self.device)
-
         for _ in range(self.K_epochs):
-            logprobs, state_values, dist_entropy = self.policy.evaluate(
-                state=old_states, action=old_actions
-            )
-            state_values = torch.squeeze(state_values)
+            for old_states, old_actions, old_rewards, old_logprobs in dataloader:
+                logprobs, state_values, dist_entropy = self.policy.evaluate(
+                    state=old_states, action=old_actions
+                )
+                state_values = torch.squeeze(state_values)
 
-            ratios = torch.exp(logprobs - old_logprobs.detach())
+                ratios = torch.exp(logprobs - old_logprobs.detach())
 
-            advantages = old_rewards - state_values.detach()
-            surr1 = ratios * advantages
-            surr2 = (
-                torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
-            )
+                advantages = old_rewards - state_values.detach()
+                surr1 = ratios * advantages
+                surr2 = (
+                    torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip)
+                    * advantages
+                )
 
-            loss = (
-                -torch.min(surr1, surr2)
-                + 0.5 * self.MseLoss(state_values, old_rewards)
-                - 0.01 * dist_entropy
-            )
+                loss = (
+                    -torch.min(surr1, surr2)
+                    + 0.5 * self.MseLoss(state_values, old_rewards)
+                    - 0.01 * dist_entropy
+                )
 
-            self.optimizer.zero_grad()
-            loss.mean().backward()
-            self.optimizer.step()
+                self.optimizer.zero_grad()
+                loss.mean().backward()
+                self.optimizer.step()
 
         self.policy_old.load_state_dict(self.policy.state_dict())
 
