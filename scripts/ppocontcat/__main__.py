@@ -13,7 +13,7 @@ rootdir = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(rootdir))
 
 import src.models.ppocontcat as models
-import src.markets.ppo as markets
+import src.markets.ppocontcat as markets
 import src.utils.data as data
 import src.utils.plot as plot
 
