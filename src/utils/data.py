@@ -5,6 +5,7 @@ import gc
 import pickle as pkl
 from pathlib import Path
 from typing import *
+from sklearn.preprocessing import RobustScaler
 
 
 def _load_bybit_data(rootdir: Path):
@@ -101,8 +102,8 @@ def add_features(df):
                 [
                     mt[nm_area],
                     max(sign * mt[nm_maxval], sign * mt[nm_minval]),
-                    mt[nm_maxlen],
-                    mt[nm_minlen],
+                    np.log1p(mt[nm_maxlen]),
+                    np.log1p(mt[nm_minlen]),
                 ]
             )
         df[[nm_area, nm_change, nm_maxlen, nm_minlen]] = _values
@@ -184,6 +185,10 @@ def load_bybit_data(num_devide: int, lags: List[int]) -> Tuple[pd.DataFrame, Lis
         ]
 
         dfa = add_features(df=df)
+        dfa[features] = RobustScaler(quantile_range=(5, 95)).fit_transform(
+            dfa[features]
+        )
+        dfa[features] = np.clip(dfa[features], -1, 1)
         dfa, features = add_lag_features(df=dfa, features=features, lags=lags)
 
         train = divide_with_pcs(df=dfa, num_divide=num_devide, division="_pcs_2")
