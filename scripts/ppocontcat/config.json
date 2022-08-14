@@ -12,6 +12,11 @@
         "NUM_STEPS": 288,
         "EVAL_LOG_INTERVAL": 2,
         "UPDATE_INTERVAL": 2,
-        "NUM_DEVIDE": 5
+        "NUM_DEVIDE": 5,
+        "LAGS": [
+            1,
+            2,
+            3
+        ]
     }
 }

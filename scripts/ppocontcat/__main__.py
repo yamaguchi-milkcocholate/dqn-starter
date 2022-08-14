@@ -62,7 +62,9 @@ def main():
 
     device = torch.device("cpu")
 
-    df, features = data.load_bybit_data(num_devide=train_params["NUM_DEVIDE"])
+    df, features = data.load_bybit_data(
+        num_devide=train_params["NUM_DEVIDE"], lags=train_params["LAGS"]
+    )
 
     actions = np.array(["Hold", "Buy", "Sell", "Cancel"])
     n_actions = 1 + actions.shape[0]

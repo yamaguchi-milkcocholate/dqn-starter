@@ -156,7 +156,7 @@ def add_lag_features(
     return df, features_with_lags
 
 
-def load_bybit_data(num_devide: int) -> Tuple[pd.DataFrame, List[str]]:
+def load_bybit_data(num_devide: int, lags: List[int]) -> Tuple[pd.DataFrame, List[str]]:
     rootdir = Path(__file__).resolve().parent.parent.parent
     dfcachedir = rootdir / "data" / "cache" / "df"
     dfcachedir.mkdir(parents=True, exist_ok=True)
@@ -184,7 +184,7 @@ def load_bybit_data(num_devide: int) -> Tuple[pd.DataFrame, List[str]]:
         ]
 
         dfa = add_features(df=df)
-        dfa, features = add_lag_features(df=dfa, features=features, lags=[1, 2, 3])
+        dfa, features = add_lag_features(df=dfa, features=features, lags=lags)
 
         train = divide_with_pcs(df=dfa, num_divide=num_devide, division="_pcs_2")
         train = train[train.columns[~train.columns.str.startswith("_")]]
