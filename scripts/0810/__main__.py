@@ -12,7 +12,7 @@ from tqdm import tqdm
 rootdir = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(rootdir))
 
-import src.models.ppo as models
+import src.models.ppocontcat as models
 import src.markets.ppo as markets
 import src.utils.data as data
 import src.utils.plot as plot
