@@ -82,9 +82,9 @@ def main():
         params=ppo_params,
     )
 
-    num_async = multiprocessing.cpu_count() - 1
+    # num_async = multiprocessing.cpu_count() - 1
     num_async = 1
-    pool = multiprocessing.Pool(num_async)
+    # pool = multiprocessing.Pool(num_async)
 
     log = list()
     best_reward = -np.inf
@@ -105,7 +105,8 @@ def main():
                     "device": device,
                 }
             )
-        result = pool.map(run_episode, params)
+        # result = pool.map(run_episode, params)
+        result = [run_episode(param) for param in params]
         memories, rewards = [r[0] for r in result], [r[1] for r in result]
 
         episode_durations += rewards
