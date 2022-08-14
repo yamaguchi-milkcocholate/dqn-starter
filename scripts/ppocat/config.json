@@ -1,0 +1,21 @@
+{
+    "ppo_params": {
+        "GAMMA": 0.999,
+        "EPS_CLIP": 0.2,
+        "K_EPOCHS": 80,
+        "LR_ACTOR": 0.0003,
+        "LR_CRITIC": 0.001,
+        "SPREAD": 0.002
+    },
+    "train_params": {
+        "NUM_EPISODES": 3,
+        "NUM_STEPS": 288,
+        "EVAL_LOG_INTERVAL": 2,
+        "UPDATE_INTERVAL": 2,
+        "NUM_DEVIDE": 5
+    },
+    "action_params": {
+        "NUM_DISCRETE": 5,
+        "MAX_SPREAD": 0.001
+    }
+}
