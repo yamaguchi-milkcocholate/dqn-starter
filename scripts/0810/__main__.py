@@ -8,7 +8,7 @@ from typing import *
 from collections import deque
 from tqdm import tqdm
 
-rootdir = Path(__file__).resolve().parent.parent
+rootdir = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(rootdir))
 
 import src.models.ppo as models
@@ -73,13 +73,13 @@ def main():
         "SPREAD": 0.002,
     }
 
-    NUM_EPISODES = 10000
+    NUM_EPISODES = 3
     NUM_STEPS = 12 * 24 * 1  # 1ヶ月
-    EVAL_LOG_INTERVAL = 250
-    UPDATE_INTERVAL = 10
+    EVAL_LOG_INTERVAL = 2
+    UPDATE_INTERVAL = 2
 
-    rootdir = Path(__file__).resolve().parent.parent
-    savedir = rootdir / "data" / "cache" / "ppo" / "task"
+    exptdir = Path(__file__).resolve().parent
+    savedir = exptdir / "out"
     savedir.mkdir(exist_ok=True, parents=True)
 
     agent = models.PPO(
