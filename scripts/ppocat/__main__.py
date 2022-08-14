@@ -123,6 +123,7 @@ def main():
             filepath=savedir / "episode_durations.png",
             xlabel="episode",
             ylabel="avg reward",
+            hist=True,
         )
 
         if (i_episode + 1) % train_params["EVAL_LOG_INTERVAL"] == 0:
@@ -145,12 +146,20 @@ def main():
                 reward, _ = market.step(action=action.detach().item())
                 rewards.append(reward)
 
-            eval_returns = market.get_return()["rtn"].values
+            eval_returns, eval_cur_returns = market.get_return()[
+                ["rtn", "cur_rtn"]
+            ].values.T
             plot.plot(
                 x=eval_returns,
                 filepath=savedir / f"eval_returns_{i_episode + 1}.png",
                 xlabel="steps",
                 ylabel="return",
+            )
+            plot.plot(
+                x=eval_cur_returns,
+                filepath=savedir / f"eval_cur_returns_{i_episode + 1}.png",
+                xlabel="steps",
+                ylabel="cur return",
             )
             plot.plot(
                 x=rewards,
@@ -173,6 +182,12 @@ def main():
                 plot.plot(
                     x=eval_returns,
                     filepath=savedir / "eval_returns_best.png",
+                    xlabel="steps",
+                    ylabel="return",
+                )
+                plot.plot(
+                    x=eval_cur_returns,
+                    filepath=savedir / "eval_cur_returns_best.png",
                     xlabel="steps",
                     ylabel="return",
                 )
