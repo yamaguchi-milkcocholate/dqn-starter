@@ -5,14 +5,14 @@
         "K_EPOCHS": 80,
         "LR_ACTOR": 0.0003,
         "LR_CRITIC": 0.001,
-        "SPREAD": 0.002,
         "BATCH_SIZE": 512
     },
     "train_params": {
-        "NUM_EPISODES": 3,
+        "NUM_EPISODES": 100000,
         "NUM_STEPS": 288,
-        "EVAL_LOG_INTERVAL": 2,
-        "UPDATE_INTERVAL": 2,
+        "NUM_EVAL_STEPS": 2016,
+        "EVAL_LOG_INTERVAL": 5000,
+        "UPDATE_INTERVAL": 500,
         "NUM_DEVIDE": 5,
         "LAGS": [],
         "N_LAG": 5
