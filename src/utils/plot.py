@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from matplotlib import pyplot as plt
 from typing import *
@@ -45,4 +46,35 @@ def plot_from_baseline3(fromdir: Path, todir: Path):
         filepath=todir / "loss.png",
         xlabel="#eval",
         ylabel="loss",
+    )
+
+
+def eval_and_plot(model, market, savedir: Path):
+    rewards = list()
+    for i in range(market.num_steps):
+        obs = market.state()
+        action, _ = model.predict(obs)
+        reward, _ = market.step(action=action)
+        rewards.append(reward)
+
+    result = market.get_return()
+    result.to_csv(savedir / "result.csv")
+
+    plot(
+        x=result["rtn"].values,
+        filepath=savedir / "return.png",
+        xlabel="step",
+        ylabel="return",
+    )
+    plot(
+        x=result["cur_rtn"].values,
+        filepath=savedir / "cur_return.png",
+        xlabel="step",
+        ylabel="cur return",
+    )
+    plot(
+        x=np.cumsum(rewards),
+        filepath=savedir / "reward.png",
+        xlabel="step",
+        ylabel="reward",
     )
