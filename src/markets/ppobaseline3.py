@@ -12,6 +12,7 @@ class Market(object):
         features: List[str],
         action_params: Dict[str, Any],
         n_lag: int,
+        is_single_transaction: bool = True,
     ):
         self.action_parser = ActionParser(
             num_discrete=action_params["NUM_DISCRETE"],
@@ -43,6 +44,7 @@ class Market(object):
         self.last_fill = False
 
         self.is_transaction_end = False
+        self.is_single_transaction = is_single_transaction
 
     @property
     def num_steps(self) -> int:
@@ -127,7 +129,8 @@ class Market(object):
             self.cur_rtn_sum = 0
             self.prices_when_fill = deque()
             self.position_side = None
-            self.is_transaction_end = True
+            if self.is_single_transaction:
+                self.is_transaction_end = True
         else:
             rtn = 0
 
@@ -163,15 +166,13 @@ class Market(object):
                 ]
             )
         )
-        if self.is_transaction_end:
-            if rtn > 0:
-                return 100, True
-            elif rtn < 0:
-                return -100, True
-            else:
-                return -100, True
+
+        if rtn > 0:
+            return 100, self.is_transaction_end
+        elif rtn < 0:
+            return -100, self.is_transaction_end
         else:
-            return 0, False
+            return -100, self.is_transaction_end
 
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
@@ -229,9 +230,14 @@ class DummyMarket(Market):
         features: List[str],
         action_params: Dict[str, Any],
         n_lag: int,
+        is_single_transaction: bool = True,
     ):
         super().__init__(
-            df=df, features=features, action_params=action_params, n_lag=n_lag
+            df=df,
+            features=features,
+            action_params=action_params,
+            n_lag=n_lag,
+            is_single_transaction=is_single_transaction,
         )
 
     def step(self, action: int) -> Tuple[float, bool]:
@@ -250,6 +256,7 @@ def random_market(
     action_params: Dict[str, Any],
     n_lag: int,
     market: Optional["Market"] = None,
+    is_single_transaction: bool = True,
 ):
     if market is None:
         market = Market
@@ -259,6 +266,7 @@ def random_market(
         features=features,
         action_params=action_params,
         n_lag=n_lag,
+        is_single_transaction=is_single_transaction,
     )
 
 
@@ -302,6 +310,7 @@ class MarketEnv(gym.Env):
         action_params: Dict[str, Any],
         n_lag: int,
         market_cls: Optional["Market"] = None,
+        is_single_transaction: bool = True,
     ):
         self.df = df
         self.features = features
@@ -320,6 +329,7 @@ class MarketEnv(gym.Env):
 
         self.market = None
         self.market_cls = market_cls
+        self.is_single_transaction = is_single_transaction
 
     def reset(self) -> np.ndarray:
         self.market = random_market(
@@ -329,6 +339,7 @@ class MarketEnv(gym.Env):
             action_params=self.action_params,
             n_lag=self.n_lag,
             market=self.market_cls,
+            is_single_transaction=self.is_single_transaction,
         )
 
         observation = self.market.state()

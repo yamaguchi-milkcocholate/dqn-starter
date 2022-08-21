@@ -1,0 +1,17 @@
+{
+    "ppo_params": {},
+    "train_params": {
+        "NUM_STEPS": 25000,
+        "NUM_TAIN_ENV_STEPS": 288,
+        "NUM_EVAL_ENV_STEPS": 288,
+        "EVAL_FREQ": 5000,
+        "UPDATE_INTERVAL": 500,
+        "NUM_DEVIDE": 5,
+        "LAGS": [],
+        "N_LAG": 5
+    },
+    "action_params": {
+        "NUM_DISCRETE": 5,
+        "MAX_SPREAD": 0.001
+    }
+}
