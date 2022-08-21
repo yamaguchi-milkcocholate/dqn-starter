@@ -61,6 +61,15 @@ def main():
 
     plot.plot_from_baseline3(fromdir=savedir / "log", todir=savedir)
 
+    eval_market = markets.Market(
+        df=df_eval,
+        features=features,
+        action_params=action_params,
+        n_lag=train_params["N_LAG"],
+        is_single_transaction=False,
+    )
+    plot.eval_and_plot(model=model, market=eval_market, savedir=savedir)
+
 
 if __name__ == "__main__":
     main()
