@@ -226,9 +226,12 @@ def random_market(
     num_steps: int,
     action_params: Dict[str, Any],
     n_lag: int,
+    market: Optional["Market"] = None,
 ):
+    if market is None:
+        market = Market
     idx = np.random.randint(n_lag, df.shape[0] - 2 - num_steps + 1)
-    return Market(
+    return market(
         df=df.iloc[idx - n_lag : idx + num_steps + 1].reset_index(drop=True),
         features=features,
         action_params=action_params,
