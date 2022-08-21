@@ -212,12 +212,35 @@ class Market(object):
         self.step_from_os = 0
 
     def state(self) -> np.ndarray:
-        trade_state = np.array(self.trader_state_que)
-        market_state = self.market_states[self.i - self.n_lag + 1 : self.i + 1]
+        trade_state = np.array(self.trader_state_que).flatten()
+        market_state = self.market_states[
+            self.i - self.n_lag + 1 : self.i + 1
+        ].flatten()
         return np.clip(np.hstack([trade_state, market_state]), -1, 1)
 
     def get_return(self) -> pd.DataFrame:
         return pd.DataFrame(self.rtns)
+
+
+class DummyMarket(Market):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        features: List[str],
+        action_params: Dict[str, Any],
+        n_lag: int,
+    ):
+        super().__init__(
+            df=df, features=features, action_params=action_params, n_lag=n_lag
+        )
+
+    def step(self, action: int) -> Tuple[float, bool]:
+        reward, is_end = super().step(action=action)
+        if self.action_parser.hold_index == action:
+            reward = 100
+        else:
+            reward = -100
+        return reward, is_end
 
 
 def random_market(
@@ -261,6 +284,14 @@ class ActionParser(object):
         cat_action_dict[i + 1] = ("Cancel", None)
         return cat_action_dict
 
+    @property
+    def hold_index(self) -> int:
+        return (self.num_discrete * 2 + 1) * 2
+
+    @property
+    def cancel_index(self) -> int:
+        return (self.num_discrete * 2 + 1) * 2 + 1
+
 
 class MarketEnv(gym.Env):
     def __init__(
@@ -270,6 +301,7 @@ class MarketEnv(gym.Env):
         num_steps: int,
         action_params: Dict[str, Any],
         n_lag: int,
+        market_cls: Optional["Market"] = None,
     ):
         self.df = df
         self.features = features
@@ -277,7 +309,7 @@ class MarketEnv(gym.Env):
         self.action_params = action_params
         self.n_lag = n_lag
 
-        self.state_dim = len(features) + 9
+        self.state_dim = (len(features) + 9) * self.n_lag
         self.action_dim = (action_params["NUM_DISCRETE"] * 2 + 1) * 2 + 2
         self.action_space = gym.spaces.Discrete(self.action_dim)
 
@@ -287,6 +319,7 @@ class MarketEnv(gym.Env):
         )
 
         self.market = None
+        self.market_cls = market_cls
 
     def reset(self) -> np.ndarray:
         self.market = random_market(
@@ -295,6 +328,7 @@ class MarketEnv(gym.Env):
             num_steps=self.num_steps,
             action_params=self.action_params,
             n_lag=self.n_lag,
+            market=self.market_cls,
         )
 
         observation = self.market.state()

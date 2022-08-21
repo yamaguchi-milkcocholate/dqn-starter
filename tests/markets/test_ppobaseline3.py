@@ -54,6 +54,24 @@ class Test_random_market関数は与えられた期間のランダムなMarket�
                 assert is_end
 
 
+def test_DummyMarketクラスは常にHoldを選択すると良い報酬を返す(df: pd.DataFrame):
+    market = markets.random_market(
+        df=df,
+        features=["f1", "f2"],
+        num_steps=5,
+        action_params={"NUM_DISCRETE": 5, "MAX_SPREAD": 0.01},
+        n_lag=3,
+        market=markets.DummyMarket,
+    )
+    assert market.num_steps == 5
+
+    assert market.step(action=22) == (100, False)
+    assert market.step(action=0) == (-100, False)
+    assert market.step(action=10) == (-100, False)
+    assert market.step(action=23) == (-100, False)
+    assert market.step(action=22) == (100, True)
+
+
 class Test_MarketEnvクラスはMarketのgym環境ラッパー:
     class Test_与えられたステップ数を実行すると終了フラグがTrueになる:
         def test_5の場合(self, df: pd.DataFrame):
