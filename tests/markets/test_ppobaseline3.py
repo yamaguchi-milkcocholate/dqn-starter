@@ -6,14 +6,14 @@ from pathlib import Path
 
 rootdir = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(rootdir))
-import src.markets.ppocat1 as markets
+import src.markets.ppobaseline3 as markets
 
 
 @pytest.fixture
 def df() -> pd.DataFrame:
     feature_cols = ["f1", "f2"]
     cols = ["price", "max_price", "min_price", "buy_price", "sell_price"]
-    values = np.random.randn(50, len(feature_cols) + len(cols))
+    values = np.random.randn(50, len(feature_cols) + len(cols)) ** 2
     df = pd.DataFrame({c: values[:, i] for i, c in enumerate(feature_cols + cols)})
     return df
 
@@ -52,3 +52,38 @@ class Test_random_market関数は与えられた期間のランダムなMarket�
                 assert not is_end
             else:
                 assert is_end
+
+
+class Test_MarketEnvクラスはMarketのgym環境ラッパー:
+    class Test_与えられたステップ数を実行すると終了フラグがTrueになる:
+        def test_5の場合(self, df: pd.DataFrame):
+            env = markets.MarketEnv(
+                df=df,
+                features=["f1", "f2"],
+                num_steps=5,
+                action_params={"NUM_DISCRETE": 5, "MAX_SPREAD": 0.01},
+                n_lag=3,
+            )
+            env.reset()
+            for i in range(5):
+                obs, rew, done, _ = env.step(action_index=0)
+                if i != 4:
+                    assert not done
+                else:
+                    assert done
+
+        def test_10の場合(self, df: pd.DataFrame):
+            env = markets.MarketEnv(
+                df=df,
+                features=["f1", "f2"],
+                num_steps=10,
+                action_params={"NUM_DISCRETE": 5, "MAX_SPREAD": 0.01},
+                n_lag=3,
+            )
+            env.reset()
+            for i in range(10):
+                obs, rew, done, _ = env.step(action_index=0)
+                if i != 9:
+                    assert not done
+                else:
+                    assert done

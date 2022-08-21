@@ -279,13 +279,13 @@ class MarketEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(self.action_dim)
 
         self.observation_space = gym.spaces.Box(
-            low=np.full(self.state_dim, -1).astype(float),
-            high=np.full(self.state_dim, 1).astype(float),
+            low=np.full(self.state_dim, -1).astype(np.float32),
+            high=np.full(self.state_dim, 1).astype(np.float32),
         )
 
         self.market = None
 
-    def reset(self):
+    def reset(self) -> np.ndarray:
         self.market = random_market(
             df=self.df,
             features=self.features,
@@ -297,7 +297,7 @@ class MarketEnv(gym.Env):
         observation = self.market.state()
         return observation
 
-    def step(self, action_index: int):
+    def step(self, action_index: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         reward, done = self.market.step(action=action_index)
         observation = self.market.state()
         return observation, reward, done, {}
