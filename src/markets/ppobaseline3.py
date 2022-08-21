@@ -172,7 +172,10 @@ class Market(object):
         elif rtn < 0:
             return -100, self.is_transaction_end
         else:
-            return -100, self.is_transaction_end
+            if self.is_transaction_end:
+                return -100, self.is_transaction_end
+            else:
+                return 0, self.is_transaction_end
 
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
