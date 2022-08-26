@@ -8,8 +8,8 @@ from typing import *
 from sklearn.preprocessing import RobustScaler
 
 
-def _load_bybit_data(rootdir: Path):
-    datadir = rootdir / "data" / "bybit" / "2022-07-24"
+def _load_bybit_data(rootdir: Path, interval: str):
+    datadir = rootdir / "data" / "bybit" / interval
 
     dfs = list()
     for i in range(1, 10):
@@ -157,18 +157,23 @@ def add_lag_features(
     return df, features_with_lags
 
 
-def load_bybit_data(num_devide: int, lags: List[int]) -> Tuple[pd.DataFrame, List[str]]:
+def load_bybit_data(
+    num_devide: int, lags: List[int], interval: str
+) -> Tuple[pd.DataFrame, List[str]]:
+    if interval not in ("1min", "5min"):
+        raise Exception()
+
     rootdir = Path(__file__).resolve().parent.parent.parent
     dfcachedir = rootdir / "data" / "cache" / "df"
     dfcachedir.mkdir(parents=True, exist_ok=True)
 
-    dfpath = dfcachedir / "ppo_df.feather"
-    featurespath = dfcachedir / "ppo_features.pkl"
+    dfpath = dfcachedir / f"ppo_df_{interval}.feather"
+    featurespath = dfcachedir / f"ppo_features_{interval}.pkl"
     if dfpath.is_file() and featurespath.is_file():
         train = feather.read_dataframe(dfpath)
         features = pkl.load(open(featurespath, "rb"))
     else:
-        df = _load_bybit_data(rootdir=rootdir)
+        df = _load_bybit_data(rootdir=rootdir, interval=interval)
         features = [
             "dsharp_1",
             "area_1",
