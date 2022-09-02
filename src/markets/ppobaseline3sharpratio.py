@@ -250,17 +250,23 @@ class DummyMarket(Market):
 def random_market(
     df: pd.DataFrame,
     features: List[str],
-    num_steps: int,
     action_params: Dict[str, Any],
     n_lag: int,
+    num_steps: Optional[int] = None,
     market: Optional["Market"] = None,
     is_single_transaction: bool = True,
 ):
     if market is None:
         market = Market
-    idx = np.random.randint(n_lag, df.shape[0] - 2 - num_steps + 1)
+
+    if num_steps is not None:
+        idx = np.random.randint(n_lag, df.shape[0] - 2 - num_steps + 1)
+        _df = df.iloc[idx - n_lag : idx + num_steps + 1].reset_index(drop=True)
+    else:
+        _df = df
+
     return market(
-        df=df.iloc[idx - n_lag : idx + num_steps + 1].reset_index(drop=True),
+        df=_df,
         features=features,
         action_params=action_params,
         n_lag=n_lag,
@@ -304,9 +310,9 @@ class MarketEnv(gym.Env):
         self,
         df: pd.DataFrame,
         features: List[str],
-        num_steps: int,
         action_params: Dict[str, Any],
         n_lag: int,
+        num_steps: Optional[int] = None,
         market_cls: Optional["Market"] = None,
         is_single_transaction: bool = True,
     ):
