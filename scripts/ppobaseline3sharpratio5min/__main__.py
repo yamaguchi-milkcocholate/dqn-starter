@@ -10,9 +10,11 @@ import src.models.ppobaseline3 as models
 import src.markets.ppobaseline3sharpratio as markets
 import src.utils.data as data
 import src.utils.plot as plot
+import src.utils.seed as seed
 
 
 def main():
+    seed.seed_everything(seed=42)
     exptdir = Path(__file__).resolve().parent
     savedir = exptdir / "out"
     savedir.mkdir(exist_ok=True, parents=True)
@@ -45,7 +47,7 @@ def main():
     eval_env = markets.MarketEnv(
         df=df_eval,
         features=features,
-        num_steps=train_params["NUM_EVAL_ENV_STEPS"],
+        num_steps=None,
         action_params=action_params,
         n_lag=train_params["N_LAG"],
         market_cls=markets.Market,
