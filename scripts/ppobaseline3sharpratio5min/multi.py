@@ -31,13 +31,17 @@ def main(fold: int):
         interval=train_params["MINUTES"],
     )
 
-    df_train, df_eval = (
-        df.loc[df["fold"] != (fold - 1)].reset_index(drop=True),
-        df.loc[df["fold"] == (fold - 1)].reset_index(drop=True),
+    df_train1, df_train2 = (
+        df.loc[df["fold"] < (train_params["NUM_DEVIDE"] - 1)].reset_index(drop=True),
+        df.loc[df["fold"] > (train_params["NUM_DEVIDE"] - 1)].reset_index(drop=True),
+    )
+    df_eval = df.loc[df["fold"] == (train_params["NUM_DEVIDE"] - 1)].reset_index(
+        drop=True
     )
 
-    train_env = markets.MarketEnv(
-        df=df_train,
+    train_env = markets.DualMarketEnv(
+        df1=df_train1,
+        df2=df_train2,
         features=features,
         num_steps=train_params["NUM_TAIN_ENV_STEPS"],
         action_params=action_params,

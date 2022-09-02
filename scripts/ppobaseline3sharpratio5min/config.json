@@ -1,7 +1,7 @@
 {
     "ppo_params": {},
     "train_params": {
-        "NUM_STEPS": 100000,
+        "NUM_STEPS": 10000,
         "NUM_TAIN_ENV_STEPS": 288,
         "NUM_EVAL_ENV_STEPS": 2016,
         "EVAL_FREQ": 10000,

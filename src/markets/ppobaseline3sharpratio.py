@@ -356,3 +356,74 @@ class MarketEnv(gym.Env):
 
     def render(self):
         raise NotImplementedError()
+
+
+class DualMarketEnv(gym.Env):
+    def __init__(
+        self,
+        df1: pd.DataFrame,
+        df2: pd.DataFrame,
+        features: List[str],
+        action_params: Dict[str, Any],
+        n_lag: int,
+        num_steps: Optional[int] = None,
+        market_cls: Optional["Market"] = None,
+        is_single_transaction: bool = True,
+    ):
+        if df1.shape[0] != 0:
+            self.env1 = MarketEnv(
+                df=df1,
+                features=features,
+                action_params=action_params,
+                n_lag=n_lag,
+                num_steps=num_steps,
+                market_cls=market_cls,
+                is_single_transaction=is_single_transaction,
+            )
+        else:
+            self.env1 = None
+
+        if df2.shape[0] != 0:
+            self.env2 = MarketEnv(
+                df=df2,
+                features=features,
+                action_params=action_params,
+                n_lag=n_lag,
+                num_steps=num_steps,
+                market_cls=market_cls,
+                is_single_transaction=is_single_transaction,
+            )
+        else:
+            self.env2 = None
+
+        self.prob_to_use_1 = df1.shape[0] / (df1.shape[0] + df2.shape[0])
+        self.reset()
+
+    @property
+    def state_dim(self) -> int:
+        return self.env_to_use.state_dim
+
+    @property
+    def action_dim(self) -> int:
+        return self.env_to_use.action_dim
+
+    @property
+    def action_space(self) -> gym.spaces.Discrete:
+        return self.env_to_use.action_space
+
+    @property
+    def observation_space(self) -> gym.spaces.Box:
+        return self.env_to_use.observation_space
+
+    def reset(self) -> np.ndarray:
+        if np.random.rand() < self.prob_to_use_1:
+            self.env_to_use = self.env1
+        else:
+            self.env_to_use = self.env2
+        return self.env_to_use.reset()
+
+    def step(self, action_index: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        return self.env_to_use.step(action_index=action_index)
+
+    def render(self):
+        raise NotImplementedError()
