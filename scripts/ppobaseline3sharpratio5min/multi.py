@@ -15,7 +15,7 @@ import src.utils.seed as seed
 
 
 def main(fold: int):
-    seed.seed_everything(seed=42)
+    seed.seed_everything(seed=43)
     exptdir = Path(__file__).resolve().parent
     savedir = exptdir / "out" / f"fold{fold}"
     savedir.mkdir(exist_ok=True, parents=True)
@@ -32,12 +32,10 @@ def main(fold: int):
     )
 
     df_train1, df_train2 = (
-        df.loc[df["fold"] < (train_params["NUM_DEVIDE"] - 1)].reset_index(drop=True),
-        df.loc[df["fold"] > (train_params["NUM_DEVIDE"] - 1)].reset_index(drop=True),
+        df.loc[df["fold"] < (fold - 1)].reset_index(drop=True),
+        df.loc[df["fold"] > (fold - 1)].reset_index(drop=True),
     )
-    df_eval = df.loc[df["fold"] == (train_params["NUM_DEVIDE"] - 1)].reset_index(
-        drop=True
-    )
+    df_eval = df.loc[df["fold"] == (fold - 1)].reset_index(drop=True)
 
     train_env = markets.DualMarketEnv(
         df1=df_train1,
