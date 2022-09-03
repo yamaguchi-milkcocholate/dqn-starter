@@ -45,6 +45,7 @@ class Market(object):
 
         self.is_transaction_end = False
         self.is_single_transaction = is_single_transaction
+        self.num_transaction_done = 0
 
     @property
     def num_steps(self) -> int:
@@ -129,6 +130,7 @@ class Market(object):
             self.cur_rtn_sum = 0
             self.prices_when_fill = deque()
             self.position_side = None
+            self.num_transaction_done += 1
             if self.is_single_transaction:
                 self.is_transaction_end = True
         else:
@@ -166,8 +168,7 @@ class Market(object):
                 ]
             )
         )
-
-        if (rtn != 0) and self.is_transaction_end:
+        if (self.num_transaction_done == 0) and self.is_transaction_end:
             return -1, self.is_transaction_end
         else:
             return sharp_ratio, self.is_transaction_end
