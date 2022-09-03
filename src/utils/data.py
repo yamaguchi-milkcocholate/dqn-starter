@@ -6,6 +6,7 @@ import pickle as pkl
 from pathlib import Path
 from typing import *
 from sklearn.preprocessing import RobustScaler
+from ta import add_all_ta_features
 
 
 def _load_bybit_data(rootdir: Path, interval: str):
@@ -18,15 +19,16 @@ def _load_bybit_data(rootdir: Path, interval: str):
     del dfs
     gc.collect()
 
-    df = df[["open_time", "close", "high", "low"]].astype(float).astype(int)
+    df = df[["open_time", "close", "high", "low", "volume"]].astype(float).astype(int)
 
-    df.columns = ["timestamp", "price", "max_price", "min_price"]
+    df.columns = ["timestamp", "price", "max_price", "min_price", "volume"]
     df[["buy_price", "sell_price"]] = df[["max_price", "min_price"]]
 
     return df
 
 
-def add_features(df):
+def add_features(_df):
+    df = _df.copy()
     df["_diff"] = df["price"].diff()
     df["spread_upper"] = df["max_price"] / df["price"] - 1
     df["spread_lower"] = df["min_price"] / df["price"] - 1
@@ -108,6 +110,15 @@ def add_features(df):
             )
         df[[nm_area, nm_change, nm_maxlen, nm_minlen]] = _values
 
+    df = add_all_ta_features(
+        df,
+        open="price_1",
+        high="max_price",
+        low="min_price",
+        close="price",
+        volume="volume",
+        fillna=True,
+    )
     df = df.dropna().reset_index(drop=True)
     return df
 
@@ -174,22 +185,14 @@ def load_bybit_data(
         features = pkl.load(open(featurespath, "rb"))
     else:
         df = _load_bybit_data(rootdir=rootdir, interval=interval)
+        df["price_1"] = df["price"].shift(1)
+        df = df.dropna().reset_index(drop=True)
+
+        dfa = add_features(_df=df)
         features = [
-            "dsharp_1",
-            "area_1",
-            "change_1",
-            "maxlen_1",
-            "minlen_1",
-            "dsharp_2",
-            "area_2",
-            "change_2",
-            "maxlen_2",
-            "minlen_2",
-            "spread_upper",
-            "spread_lower",
+            col for col in set(dfa.columns) - set(df.columns) if not col.startswith("_")
         ]
 
-        dfa = add_features(df=df)
         dfa[features] = RobustScaler(quantile_range=(5, 95)).fit_transform(
             dfa[features]
         )
