@@ -50,6 +50,7 @@ class Market(object):
         self.trader_state_que = deque(
             [np.zeros(self.trader_state_dim) for _ in range(n_lag)], maxlen=n_lag
         )
+        self.max_logdiff = np.log(self.prices[:, 0].max() / self.prices[:, 0].min())
 
     @property
     def num_steps(self) -> int:
@@ -159,10 +160,7 @@ class Market(object):
             self.is_transaction_end = True
 
         self.trader_state_que.append(np.array(self.trader_state))
-        if (self.num_transaction_done == 0) and self.is_transaction_end:
-            return -1, self.is_transaction_end
-        else:
-            return sharp_ratio, self.is_transaction_end
+        return rtn, self.is_transaction_end
 
     @property
     def trader_state(self) -> List[float]:
@@ -186,20 +184,21 @@ class Market(object):
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
             if self.first_fill:
-                return np.log(self.prices[self.i, 0] / self.lb)
+                logdiff = np.log(self.prices[self.i, 0] / self.lb)
             elif self.last_fill:
-                return np.log(self.ls / self.prices[self.i - 1, 0])
+                logdiff = np.log(self.ls / self.prices[self.i - 1, 0])
             else:
-                return np.log(self.prices[self.i, 0] / self.prices[self.i - 1, 0])
+                logdiff = np.log(self.prices[self.i, 0] / self.prices[self.i - 1, 0])
         elif self.position_side == "Sell":
             if self.first_fill:
-                return np.log(self.ls / self.prices[self.i, 0])
+                logdiff = np.log(self.ls / self.prices[self.i, 0])
             elif self.last_fill:
-                return np.log(self.prices[self.i - 1, 0] / self.lb)
+                logdiff = np.log(self.prices[self.i - 1, 0] / self.lb)
             else:
-                return np.log(self.prices[self.i - 1, 0] / self.prices[self.i, 0])
+                logdiff = np.log(self.prices[self.i - 1, 0] / self.prices[self.i, 0])
         else:
-            return np.log(1)
+            logdiff = np.log(1)
+        return logdiff / self.max_logdiff
 
     def set_order_buy(self, price):
         self.ob = True

@@ -13,6 +13,6 @@
     },
     "action_params": {
         "NUM_DISCRETE": 5,
-        "MAX_SPREAD": 0.001
+        "MAX_SPREAD": 0.0001
     }
 }
