@@ -50,7 +50,8 @@ class Market(object):
         self.trader_state_que = deque(
             [np.zeros(self.trader_state_dim) for _ in range(n_lag)], maxlen=n_lag
         )
-        self.max_logdiff = np.log(self.prices[:, 0].max() / self.prices[:, 0].min())
+        # self.max_logdiff = np.log(self.prices[:, 0].max() / self.prices[:, 0].min())
+        self.max_logdiff = 1
 
     @property
     def num_steps(self) -> int:
@@ -160,7 +161,8 @@ class Market(object):
             self.is_transaction_end = True
 
         self.trader_state_que.append(np.array(self.trader_state))
-        return rtn, self.is_transaction_end
+        # return rtn, self.is_transaction_end
+        return sharp_ratio, self.is_transaction_end
 
     @property
     def trader_state(self) -> List[float]:
