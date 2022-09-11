@@ -1310,6 +1310,18 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "typeguard", "pytest"]
 
 [[package]]
+name = "ta"
+version = "0.10.2"
+description = "Technical Analysis Library in Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = "*"
+pandas = "*"
+
+[[package]]
 name = "terminado"
 version = "0.15.0"
 description = "Tornado websocket backend for the Xterm.js Javascript terminal emulator library."
@@ -1476,7 +1488,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "ba8fd22aca309e1c2e500dd699c1c9f1bd04caf9468b682293381f21272c0b87"
+content-hash = "2dbc205b8891e4a4a75a7e16c5c9048f04d43a407e85e7e13940c5f698e7eab3"
 
 [metadata.files]
 anyio = [
@@ -2384,6 +2396,9 @@ stable-baselines3 = [
 stack-data = [
     {file = "stack_data-0.3.0-py3-none-any.whl", hash = "sha256:aa1d52d14d09c7a9a12bb740e6bdfffe0f5e8f4f9218d85e7c73a8c37f7ae38d"},
     {file = "stack_data-0.3.0.tar.gz", hash = "sha256:77bec1402dcd0987e9022326473fdbcc767304892a533ed8c29888dacb7dddbc"},
+]
+ta = [
+    {file = "ta-0.10.2.tar.gz", hash = "sha256:e8d193dadd44d88e3c4118dc5224e2fcdc0235caba3efa758aa7a875ffba2faa"},
 ]
 terminado = [
     {file = "terminado-0.15.0-py3-none-any.whl", hash = "sha256:0d5f126fbfdb5887b25ae7d9d07b0d716b1cc0ccaacc71c1f3c14d228e065197"},
