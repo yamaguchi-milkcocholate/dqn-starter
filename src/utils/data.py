@@ -3,10 +3,13 @@ import pandas as pd
 import feather
 import gc
 import pickle as pkl
+import json
+from pprint import pprint
 from pathlib import Path
 from typing import *
 from sklearn.preprocessing import RobustScaler
 from ta import add_all_ta_features
+import src.utils.tainvoke as tainvoke
 
 
 def _load_bybit_data(rootdir: Path, interval: str):
@@ -29,86 +32,8 @@ def _load_bybit_data(rootdir: Path, interval: str):
 
 def add_features(_df):
     df = _df.copy()
-    df["_diff"] = df["price"].diff()
     df["spread_upper"] = df["max_price"] / df["price"] - 1
     df["spread_lower"] = df["min_price"] / df["price"] - 1
-
-    for minutes in [1, 2]:
-        (
-            nm_dsharp,
-            nm_p,
-            nm_pcs,
-            nm_area,
-            nm_maxval,
-            nm_minval,
-            nm_maxlen,
-            nm_minlen,
-            nm_change,
-        ) = [
-            f"{nm}_{minutes}"
-            for nm in [
-                "dsharp",
-                "_p",
-                "_pcs",
-                "area",
-                "maxval",
-                "minval",
-                "maxlen",
-                "minlen",
-                "change",
-            ]
-        ]
-
-        # 微分Sharp比
-        df[nm_dsharp] = df["_diff"].rolling(minutes * 6).mean() / (
-            df["_diff"].rolling(minutes * 6).std() + 1.0
-        )
-
-        df[nm_p] = find_cross_zero(x=df[nm_dsharp].values)
-        df[nm_pcs] = df[nm_p].cumsum()
-
-        _values = np.empty((df.shape[0], 4))
-        for i, (price, ds, p, pcs) in enumerate(
-            df[["price", nm_dsharp, nm_p, nm_pcs]].values
-        ):
-            sign = np.sign(ds)
-            if pcs == 0:
-                mt = {
-                    nm_area: np.nan,
-                    nm_maxval: np.nan,
-                    nm_minval: np.nan,
-                    nm_maxlen: np.nan,
-                    nm_minlen: np.nan,
-                }
-            else:
-                if p:
-                    mt = {
-                        nm_area: 0,
-                        nm_maxval: -np.inf,
-                        nm_minval: np.inf,
-                        nm_maxlen: 0,
-                        nm_minlen: 0,
-                    }
-                mt[nm_area] += sign * ds
-                if ds > mt[nm_maxval]:
-                    mt[nm_maxlen] = 0
-                    mt[nm_maxval] = ds
-                else:
-                    mt[nm_maxlen] += 1
-                if ds < mt[nm_minval]:
-                    mt[nm_minlen] = 0
-                    mt[nm_minval] = ds
-                else:
-                    mt[nm_minlen] += 1
-            _values[i] = np.array(
-                [
-                    mt[nm_area],
-                    max(sign * mt[nm_maxval], sign * mt[nm_minval]),
-                    np.log1p(mt[nm_maxlen]),
-                    np.log1p(mt[nm_minlen]),
-                ]
-            )
-        df[[nm_area, nm_change, nm_maxlen, nm_minlen]] = _values
 
     df = add_all_ta_features(
         df,
@@ -169,26 +94,31 @@ def add_lag_features(
 
 
 def load_bybit_data(
-    num_devide: int, lags: List[int], interval: str
+    num_divide: int, interval: str, use_cache: bool = True
 ) -> Tuple[pd.DataFrame, List[str]]:
     if interval not in ("1min", "5min"):
         raise Exception()
 
     rootdir = Path(__file__).resolve().parent.parent.parent
+    tadir = rootdir / "data" / "ta"
     dfcachedir = rootdir / "data" / "cache" / "df"
     dfcachedir.mkdir(parents=True, exist_ok=True)
 
     dfpath = dfcachedir / f"ppo_df_{interval}.feather"
     featurespath = dfcachedir / f"ppo_features_{interval}.pkl"
-    if dfpath.is_file() and featurespath.is_file():
-        train = feather.read_dataframe(dfpath)
+    if dfpath.is_file() and featurespath.is_file() and use_cache:
+        dfa = feather.read_dataframe(dfpath)
         features = pkl.load(open(featurespath, "rb"))
     else:
         df = _load_bybit_data(rootdir=rootdir, interval=interval)
-        df["price_1"] = df["price"].shift(1)
+        df["open"] = df["price"].shift(1)
         df = df.dropna().reset_index(drop=True)
+        df = df.rename(
+            columns={"price": "close", "max_price": "high", "min_price": "low"}
+        )
 
-        dfa = add_features(_df=df)
+        ta_config = json.load(open(tadir / "config.json", "r"))
+        dfa = add_ta_features(df=df, ta_config=ta_config)
         features = [
             col for col in set(dfa.columns) - set(df.columns) if not col.startswith("_")
         ]
@@ -197,12 +127,57 @@ def load_bybit_data(
             dfa[features]
         )
         dfa[features] = np.clip(dfa[features], -1, 1)
-        dfa, features = add_lag_features(df=dfa, features=features, lags=lags)
 
-        train = divide_with_pcs(df=dfa, num_divide=num_devide, division="_pcs_2")
-        train = train[train.columns[~train.columns.str.startswith("_")]]
+        dfa["fold"] = equal_divide_indice(length=dfa.shape[0], num_divide=num_divide)
+        dfa = dfa[dfa.columns[~dfa.columns.str.startswith("_")]]
 
-        feather.write_dataframe(train, dfpath)
+        feather.write_dataframe(dfa, dfpath)
         pkl.dump(features, open(featurespath, "wb"))
 
-    return train, features
+    pprint(features)
+
+    return dfa, features
+
+
+def make_args(df: pd.DataFrame, ohlcv: str) -> Dict[str, pd.DataFrame]:
+    args = {}
+    for k in ohlcv:
+        if k == "o":
+            args["open"] = df["open"]
+        elif k == "h":
+            args["high"] = df["high"]
+        elif k == "l":
+            args["low"] = df["low"]
+        elif k == "c":
+            args["close"] = df["close"]
+        elif k == "v":
+            args["volume"] = df["volume"]
+    return args
+
+
+def add_ta_features(df: pd.DataFrame, ta_config: Dict[str, Any]) -> pd.DataFrame:
+    values = {}
+
+    for cls_name, cls_config in ta_config.items():
+        print(cls_name, "・・・", end="")
+
+        params, method, ohlcv = (
+            cls_config["params"],
+            cls_config["method"],
+            cls_config["ohlcv"],
+        )
+        args = make_args(df=df, ohlcv=ohlcv)
+
+        for i, _param in enumerate(params):
+            ta_instance = getattr(tainvoke, cls_name)(**args, **_param)
+
+            for method_name, prefix in method.items():
+                values[f"{cls_name}_{prefix}_{i + 1}"] = getattr(
+                    ta_instance, method_name
+                )()
+
+        print(" Done.")
+    dfa = pd.DataFrame(values).fillna(method="ffill")
+    dfa = pd.concat([df, dfa], axis=1)
+    dfa = dfa.dropna().reset_index(drop=True)
+    return dfa

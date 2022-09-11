@@ -21,9 +21,7 @@ class Market(object):
 
         self.market_states_cols = features
         self.market_states = df[self.market_states_cols].values
-        self.prices = df[
-            ["price", "max_price", "min_price", "buy_price", "sell_price"]
-        ].values
+        self.prices = df[["close", "high", "low", "buy_price", "sell_price"]].values
 
         self.ob, self.os = False, False
         self.fb, self.fs = False, False
