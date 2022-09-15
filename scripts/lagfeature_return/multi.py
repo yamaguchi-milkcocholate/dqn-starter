@@ -25,7 +25,7 @@ def main(fold: int):
     action_params = config["action_params"]
 
     df, features = data.load_bybit_data(
-        num_divide=train_params["NUM_DEVIDE"],
+        num_divide=train_params["NUM_DIVIDE"],
         interval=train_params["MINUTES"],
     )
 

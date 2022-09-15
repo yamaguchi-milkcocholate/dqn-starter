@@ -159,8 +159,8 @@ class Market(object):
             self.is_transaction_end = True
 
         self.trader_state_que.append(np.array(self.trader_state))
-        # return rtn, self.is_transaction_end
-        return sharp_ratio, self.is_transaction_end
+        return rtn, self.is_transaction_end
+        # return sharp_ratio, self.is_transaction_end
 
     @property
     def trader_state(self) -> List[float]:
