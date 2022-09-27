@@ -6,7 +6,7 @@ then
     num_divide=$(echo $config | jq '.train_params' | jq '.NUM_DIVIDE')
     echo "K=${num_divide}foldを5コアで実行"
     echo "=============================="
-    seq 2 $num_divide | xargs -i python multi.py {}
+    seq 1 $num_divide | xargs -i python multi.py {}
 else
     echo "config.jsonが存在しない"
 fi

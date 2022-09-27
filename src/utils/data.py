@@ -106,6 +106,7 @@ def load_bybit_data(
 
     dfpath = dfcachedir / f"ppo_df_{interval}.feather"
     featurespath = dfcachedir / f"ppo_features_{interval}.pkl"
+    scalerpath = dfcachedir / f"ppo_scaler_{interval}.pkl"
     if dfpath.is_file() and featurespath.is_file() and use_cache:
         dfa = feather.read_dataframe(dfpath)
         features = pkl.load(open(featurespath, "rb"))
@@ -123,9 +124,8 @@ def load_bybit_data(
             col for col in set(dfa.columns) - set(df.columns) if not col.startswith("_")
         ]
 
-        dfa[features] = RobustScaler(quantile_range=(5, 95)).fit_transform(
-            dfa[features]
-        )
+        scaler = RobustScaler(quantile_range=(5, 95))
+        dfa[features] = scaler.fit_transform(dfa[features])
         dfa[features] = np.clip(dfa[features], -1, 1)
 
         dfa["fold"] = equal_divide_indice(length=dfa.shape[0], num_divide=num_divide)
@@ -133,6 +133,7 @@ def load_bybit_data(
 
         feather.write_dataframe(dfa, dfpath)
         pkl.dump(features, open(featurespath, "wb"))
+        pkl.dump(scaler, open(scalerpath, "wb"))
 
     pprint(features)
 

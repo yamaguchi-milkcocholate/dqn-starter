@@ -20,6 +20,7 @@ def main():
     df, features = data.load_bybit_data(
         num_divide=train_params["NUM_DEVIDE"],
         interval=train_params["MINUTES"],
+        use_cache=False,
     )
 
 
