@@ -105,11 +105,12 @@ def load_bybit_data(
     dfcachedir.mkdir(parents=True, exist_ok=True)
 
     dfpath = dfcachedir / f"ppo_df_{interval}.feather"
-    featurespath = dfcachedir / f"ppo_features_{interval}.pkl"
+    featurespath = dfcachedir / f"ppo_features_{interval}.csv"
     scalerpath = dfcachedir / f"ppo_scaler_{interval}.pkl"
     if dfpath.is_file() and featurespath.is_file() and use_cache:
         dfa = feather.read_dataframe(dfpath)
-        features = pkl.load(open(featurespath, "rb"))
+        df_features = pd.read_csv(featurespath)
+        features = df_features["feature_name"].values.tolist()
     else:
         df = _load_bybit_data(rootdir=rootdir, interval=interval)
         df["open"] = df["price"].shift(1)
@@ -123,6 +124,7 @@ def load_bybit_data(
         features = [
             col for col in set(dfa.columns) - set(df.columns) if not col.startswith("_")
         ]
+        df_features = pd.DataFrame(features, columns=["feature_name"])
 
         scaler = RobustScaler(quantile_range=(5, 95))
         dfa[features] = scaler.fit_transform(dfa[features])
@@ -132,7 +134,7 @@ def load_bybit_data(
         dfa = dfa[dfa.columns[~dfa.columns.str.startswith("_")]]
 
         feather.write_dataframe(dfa, dfpath)
-        pkl.dump(features, open(featurespath, "wb"))
+        df_features.to_csv(featurespath, index=False)
         pkl.dump(scaler, open(scalerpath, "wb"))
 
     pprint(features)
