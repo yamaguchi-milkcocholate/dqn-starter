@@ -162,7 +162,7 @@ def add_ta_features(df: pd.DataFrame, ta_config: Dict[str, Any]) -> pd.DataFrame
     values = {}
 
     for cls_name, cls_config in ta_config.items():
-        print(cls_name, "・・・", end="")
+        print(cls_name, "・・・")
 
         params, method, ohlcv = (
             cls_config["params"],
@@ -175,12 +175,18 @@ def add_ta_features(df: pd.DataFrame, ta_config: Dict[str, Any]) -> pd.DataFrame
             ta_instance = getattr(tainvoke, cls_name)(**args, **_param)
 
             for method_name, prefix in method.items():
-                values[f"{cls_name}_{prefix}_{i + 1}"] = getattr(
-                    ta_instance, method_name
-                )()
+                print(" " * 4, f"- {prefix} {i + 1}  ", end="")
+                _values = getattr(ta_instance, method_name)()
+                values[f"{cls_name}_{prefix}_{i + 1}"] = _values
 
+                if np.isinf(_values).any():
+                    print("Warning [infinity]")
+                else:
+                    print("Done")
         print(" Done.")
-    dfa = pd.DataFrame(values).fillna(method="ffill")
-    dfa = pd.concat([df, dfa], axis=1)
-    dfa = dfa.dropna().reset_index(drop=True)
+
+    dfa = pd.DataFrame(values)
+    dfa = dfa.replace([np.inf, -np.inf], np.nan)
+    dfa = dfa.fillna(dfa.median())
+    dfa = pd.concat([df, dfa], axis=1).reset_index(drop=True)
     return dfa
