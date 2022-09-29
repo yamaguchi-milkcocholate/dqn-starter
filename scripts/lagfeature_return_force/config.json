@@ -29,6 +29,5 @@
         "NUM_DIVIDE": 5,
         "N_LAG": 5,
         "MINUTES": "1min"
-    },
-    "action_params": {}
+    }
 }

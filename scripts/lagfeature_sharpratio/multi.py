@@ -7,7 +7,7 @@ rootdir = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(rootdir))
 
 import src.models.lagfeature as models
-import src.markets.lagfeaturereturn as markets
+import src.markets.lagfeaturesharpratio as markets
 import src.utils.data as data
 import src.utils.plot as plot
 import src.utils.seed as seed
@@ -22,7 +22,6 @@ def main(fold: int):
     config = json.load(open(exptdir / "config.json", "r"))
     ppo_params = config["ppo_params"]
     train_params = config["train_params"]
-    action_params = config["action_params"]
 
     df, features = data.load_bybit_data(
         num_divide=train_params["NUM_DIVIDE"],
@@ -40,7 +39,6 @@ def main(fold: int):
         df2=df_train2,
         features=features,
         num_steps=train_params["NUM_TAIN_ENV_STEPS"],
-        action_params=action_params,
         n_lag=train_params["N_LAG"],
         market_cls=markets.Market,
         is_single_transaction=False,
@@ -49,7 +47,6 @@ def main(fold: int):
         df=df_eval,
         features=features,
         num_steps=None,
-        action_params=action_params,
         n_lag=train_params["N_LAG"],
         market_cls=markets.Market,
         is_single_transaction=False,
@@ -69,7 +66,6 @@ def main(fold: int):
     eval_market = markets.Market(
         df=df_eval,
         features=features,
-        action_params=action_params,
         n_lag=train_params["N_LAG"],
         is_single_transaction=False,
     )

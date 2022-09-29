@@ -1,10 +1,8 @@
 {
     "ppo_params": {
         "policy_kwargs": {
-            "features_extractor_class": "FeatureAxisCombinedExtractor",
-            "features_extractor_kwargs": {
-                "emb_dim": 64
-            },
+            "features_extractor_class": "TimeAxisCombinedExtractor",
+            "features_extractor_kwargs": {},
             "net_arch": [
                 256,
                 {
@@ -21,17 +19,14 @@
         }
     },
     "train_params": {
-        "NUM_STEPS": 10000000,
+        "NUM_STEPS": 1000000,
         "NUM_TAIN_ENV_STEPS": 288,
         "NUM_EVAL_ENV_STEPS": 2016,
-        "EVAL_FREQ": 1000000,
+        "EVAL_FREQ": 100000,
         "UPDATE_INTERVAL": 500,
         "NUM_DIVIDE": 5,
         "N_LAG": 5,
         "MINUTES": "1min"
     },
-    "action_params": {
-        "NUM_DISCRETE": 0,
-        "MAX_SPREAD": 0.00
-    }
+    "action_params": {}
 }
