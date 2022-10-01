@@ -144,18 +144,18 @@ class Market(object):
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
             if self.first_fill:
-                logdiff = np.log(self.prices[self.i] / self.lb)
+                logdiff = np.log(self.prices[self.i + 1] / self.lb)
             elif self.last_fill:
-                logdiff = np.log(self.ls / self.prices[self.i - 1])
+                logdiff = np.log(self.ls / self.prices[self.i])
             else:
-                logdiff = np.log(self.prices[self.i] / self.prices[self.i - 1])
+                logdiff = np.log(self.prices[self.i + 1] / self.prices[self.i])
         elif self.position_side == "Sell":
             if self.first_fill:
-                logdiff = np.log(self.ls / self.prices[self.i])
+                logdiff = np.log(self.ls / self.prices[self.i + 1])
             elif self.last_fill:
-                logdiff = np.log(self.prices[self.i - 1] / self.lb)
+                logdiff = np.log(self.prices[self.i] / self.lb)
             else:
-                logdiff = np.log(self.prices[self.i - 1] / self.prices[self.i])
+                logdiff = np.log(self.prices[self.i] / self.prices[self.i + 1])
         else:
             logdiff = np.log(1)
         return logdiff
