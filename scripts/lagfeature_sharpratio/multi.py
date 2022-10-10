@@ -58,8 +58,9 @@ def main(fold: int):
         total_timesteps=train_params["NUM_STEPS"],
         eval_env=eval_env,
         eval_freq=train_params["EVAL_FREQ"],
+        eval_log_path=str(savedir),
     )
-    model.save(savedir / "model")
+    model.save(savedir / "final_model")
 
     plot.plot_from_baseline3(fromdir=savedir / "log", todir=savedir)
 
