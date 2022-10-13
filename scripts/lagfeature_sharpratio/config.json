@@ -19,7 +19,7 @@
         }
     },
     "train_params": {
-        "NUM_STEPS": 10000000,
+        "NUM_STEPS": 2500000,
         "NUM_TAIN_ENV_STEPS": 288,
         "NUM_EVAL_ENV_STEPS": 2016,
         "EVAL_FREQ": 100000,
