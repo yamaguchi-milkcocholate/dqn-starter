@@ -21,6 +21,7 @@ class Market(object):
         self.market_states_cols = features
         self.market_states = df[self.market_states_cols].values
         self.prices = df["close"].values
+        self.raw_df = df[["timestamp", "close", "high", "low", "volume"]]
 
         self.ob, self.os = False, False
         self.fb, self.fs = False, False
@@ -113,9 +114,10 @@ class Market(object):
 
         if self.fb and self.fs:
             self.step_from_fb, self.step_from_fs = 0, 0
-            self.fb, self.fs = False, False
             self.sum_rtn += self.ls / self.lb - 1
             self.cur_rtn = 0
+            self.fb, self.fs = False, False
+            self.lb, self.ls = None, None
             self.position_side = None
             self.num_transaction_done += 1
             if self.is_single_transaction:
