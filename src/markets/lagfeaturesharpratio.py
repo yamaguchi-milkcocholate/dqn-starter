@@ -4,7 +4,7 @@ import gym
 from typing import *
 from collections import deque
 
-ACTION_DIM = 4
+ACTION_DIM = 3
 TRADE_STATE_DIM = 5
 
 
@@ -70,11 +70,6 @@ class Market(object):
                 self.set_order_sell(price=price * (1 + spread))
         elif action == "Hold":
             pass
-        elif action == "Cancel":
-            if self.ob:
-                self.unset_order_buy()
-            elif self.os:
-                self.unset_order_sell()
 
         self.first_fill, self.last_fill = False, False
 
@@ -123,6 +118,14 @@ class Market(object):
             if self.is_single_transaction:
                 self.is_transaction_end = True
 
+        if self.is_transaction_end:
+            if self.cur_rtn > 0:
+                terminal_reward = 1
+            else:
+                terminal_reward = -1
+        else:
+            terminal_reward = 0
+
         self.rtns.append(
             {
                 "i": self.i,
@@ -139,9 +142,10 @@ class Market(object):
         self.i += 1
         if self.i >= (self.num_steps + self.n_lag):
             self.is_transaction_end = True
+            terminal_reward = -1
 
         self.trader_state_que.append(np.array(self.trader_state))
-        return sharp_ratio, self.is_transaction_end
+        return sharp_ratio + terminal_reward, self.is_transaction_end
 
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
@@ -271,7 +275,6 @@ class ActionParser(object):
             0: ("Buy", 0.0),
             1: ("Sell", 0.0),
             2: ("Hold", None),
-            3: ("Cancel", None),
         }
         return cat_action_dict
 

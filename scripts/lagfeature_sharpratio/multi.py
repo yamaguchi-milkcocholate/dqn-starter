@@ -41,7 +41,7 @@ def main(fold: int):
         num_steps=train_params["NUM_TAIN_ENV_STEPS"],
         n_lag=train_params["N_LAG"],
         market_cls=markets.Market,
-        is_single_transaction=False,
+        is_single_transaction=True,
     )
     eval_env = markets.MarketEnv(
         df=df_eval,
