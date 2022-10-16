@@ -109,7 +109,8 @@ class Market(object):
 
         if self.fb and self.fs:
             self.step_from_fb, self.step_from_fs = 0, 0
-            self.sum_rtn += self.ls / self.lb - 1
+            transaction_return = self.ls / self.lb - 1
+            self.sum_rtn += transaction_return
             self.cur_rtn = 0
             self.fb, self.fs = False, False
             self.lb, self.ls = None, None
@@ -117,12 +118,11 @@ class Market(object):
             self.num_transaction_done += 1
             if self.is_single_transaction:
                 self.is_transaction_end = True
+        else:
+            transaction_return = 0
 
         if self.is_transaction_end:
-            if self.cur_rtn > 0:
-                terminal_reward = 1
-            else:
-                terminal_reward = -1
+            terminal_reward = transaction_return
         else:
             terminal_reward = 0
 
@@ -145,7 +145,7 @@ class Market(object):
             terminal_reward = -1
 
         self.trader_state_que.append(np.array(self.trader_state))
-        return sharp_ratio + terminal_reward, self.is_transaction_end
+        return sharp_ratio, self.is_transaction_end
 
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
