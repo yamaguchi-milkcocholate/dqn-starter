@@ -26,6 +26,8 @@ def main(fold: int):
     df, features = data.load_bybit_data(
         num_divide=train_params["NUM_DIVIDE"],
         interval=train_params["MINUTES"],
+        # use_cache=False,
+        ta_config_file="config_small.json",
     )
 
     df_train1, df_train2 = (
@@ -41,7 +43,7 @@ def main(fold: int):
         num_steps=train_params["NUM_TAIN_ENV_STEPS"],
         n_lag=train_params["N_LAG"],
         market_cls=markets.Market,
-        is_single_transaction=True,
+        is_single_transaction=False,
     )
     eval_env = markets.MarketEnv(
         df=df_eval,
