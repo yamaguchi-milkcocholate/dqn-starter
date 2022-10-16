@@ -94,7 +94,10 @@ def add_lag_features(
 
 
 def load_bybit_data(
-    num_divide: int, interval: str, use_cache: bool = True
+    num_divide: int,
+    interval: str,
+    use_cache: bool = True,
+    ta_config_file: str = "config.json",
 ) -> Tuple[pd.DataFrame, List[str]]:
     if interval not in ("1min", "5min"):
         raise Exception()
@@ -119,7 +122,7 @@ def load_bybit_data(
             columns={"price": "close", "max_price": "high", "min_price": "low"}
         )
 
-        ta_config = json.load(open(tadir / "config.json", "r"))
+        ta_config = json.load(open(tadir / ta_config_file, "r"))
         dfa = add_ta_features(df=df, ta_config=ta_config)
         features = [
             col for col in set(dfa.columns) - set(df.columns) if not col.startswith("_")
