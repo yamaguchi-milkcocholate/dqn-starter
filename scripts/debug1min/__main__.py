@@ -21,6 +21,7 @@ def main():
         num_divide=train_params["NUM_DEVIDE"],
         interval=train_params["MINUTES"],
         use_cache=False,
+        ta_config_file="config_mine.json",
     )
 
 

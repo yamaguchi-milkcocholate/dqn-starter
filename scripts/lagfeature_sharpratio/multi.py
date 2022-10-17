@@ -27,7 +27,7 @@ def main(fold: int):
         num_divide=train_params["NUM_DIVIDE"],
         interval=train_params["MINUTES"],
         # use_cache=False,
-        ta_config_file="config_small.json",
+        ta_config_file="config_mine.json",
     )
 
     df_train1, df_train2 = (
