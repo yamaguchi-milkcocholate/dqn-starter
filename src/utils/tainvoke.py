@@ -51,6 +51,8 @@ from ta.volume import (
     VolumeWeightedAveragePrice,
 )
 
+from src.utils.myta import ROC
+
 __all__ = [
     "AwesomeOscillatorIndicator",
     "KAMAIndicator",
@@ -94,4 +96,5 @@ __all__ = [
     "OnBalanceVolumeIndicator",
     "VolumePriceTrendIndicator",
     "VolumeWeightedAveragePrice",
+    "ROC",
 ]
