@@ -23,7 +23,6 @@ class Market(object):
         self.prices = df["close"].values
         self.raw_df = df[["timestamp", "close", "high", "low", "volume"]]
 
-        self.ob, self.os = False, False
         self.fb, self.fs = False, False
         self.lb, self.ls = None, None
         self.step_from_fb, self.step_from_fs = 0, 0
@@ -32,18 +31,19 @@ class Market(object):
         self.rtns = list()
         self.cur_rtn = 0
         self.position_side = None
-        self.first_fill = False
-        self.last_fill = False
 
         self.is_transaction_end = False
         self.is_single_transaction = is_single_transaction
         self.num_transaction_done = 0
 
         self.i = n_lag
-
         self.n_lag = n_lag
+        self.reset_trader_state()
+
+    def reset_trader_state(self) -> None:
         self.trader_state_que = deque(
-            [np.zeros(self.trader_state_dim) for _ in range(n_lag)], maxlen=n_lag
+            [np.zeros(self.trader_state_dim) for _ in range(self.n_lag)],
+            maxlen=self.n_lag,
         )
 
     @property
@@ -54,42 +54,42 @@ class Market(object):
         action, spread = self.action_parser.find_action(action=action)
         price = self.prices[self.i]
 
-        if action == "Buy":
-            if self.fb:
+        transaction_return = 0
+        if self.fb and not self.fs:
+            if action == "Buy":
                 pass
-            else:
-                if self.os:
-                    self.unset_order_sell()
-                self.set_order_buy(price=price * (1 - spread))
-        elif action == "Sell":
-            if self.fs:
-                pass
-            else:
-                if self.ob:
-                    self.unset_order_buy()
+            elif action == "Sell":
                 self.set_order_sell(price=price * (1 + spread))
-        elif action == "Hold":
-            pass
+                transaction_return = self.exceed_transaction()
 
-        self.first_fill, self.last_fill = False, False
-
-        if self.ob:
-            self.fb = True
-            self.ob = False
-            if self.position_side is None:
-                self.position_side = "Buy"
-                self.first_fill = True
-            else:
-                self.last_fill = True
-
-        if self.os:
-            self.fs = True
-            self.os = False
-            if self.position_side is None:
+                self.set_order_sell(price=price * (1 + spread))
                 self.position_side = "Sell"
-                self.first_fill = True
+            elif action == "Hold":
+                self.set_order_sell(price=price * (1 + spread))
+                transaction_return = self.exceed_transaction()
+        elif not self.fb and self.fs:
+            if action == "Buy":
+                self.set_order_buy(price=price * (1 - spread))
+                transaction_return = self.exceed_transaction()
+
+                self.set_order_buy(price=price * (1 - spread))
+                self.position_side = "Buy"
+            elif action == "Sell":
+                pass
+            elif action == "Hold":
+                self.set_order_buy(price=price * (1 - spread))
+                transaction_return = self.exceed_transaction()
+        elif not self.fb and not self.fs:
+            if action == "Buy":
+                self.set_order_buy(price=price * (1 - spread))
+                self.position_side = "Buy"
+            elif action == "Sell":
+                self.set_order_sell(price=price * (1 + spread))
+                self.position_side = "Sell"
             else:
-                self.last_fill = True
+                pass
+        else:
+            raise Exception()
 
         if self.fb:
             self.step_from_fb += 1
@@ -107,32 +107,15 @@ class Market(object):
             self.cur_rtn = 0
         sharp_ratio = self.calc_sharp_ratio()
 
-        if self.fb and self.fs:
-            self.step_from_fb, self.step_from_fs = 0, 0
-            transaction_return = self.ls / self.lb - 1
-            self.sum_rtn += transaction_return
-            self.cur_rtn = 0
-            self.fb, self.fs = False, False
-            self.lb, self.ls = None, None
-            self.position_side = None
-            self.num_transaction_done += 1
-            if self.is_single_transaction:
-                self.is_transaction_end = True
-        else:
-            transaction_return = 0
-
-        if self.is_transaction_end:
-            terminal_reward = transaction_return
-        else:
-            terminal_reward = 0
+        self.sum_rtn += transaction_return
+        if self.is_single_transaction and self.num_transaction_done > 0:
+            self.is_transaction_end = True
 
         self.rtns.append(
             {
                 "i": self.i,
                 "rtn": self.sum_rtn,
                 "cur_rtn": self.cur_rtn,
-                "ob": self.ob,
-                "os": self.os,
                 "fb": self.fb,
                 "fs": self.fs,
                 "act": action,
@@ -142,29 +125,34 @@ class Market(object):
         self.i += 1
         if self.i >= (self.num_steps + self.n_lag):
             self.is_transaction_end = True
-            terminal_reward = -1
 
         self.trader_state_que.append(np.array(self.trader_state))
-        return sharp_ratio, self.is_transaction_end
+        return (
+            sharp_ratio + transaction_return,
+            self.is_transaction_end,
+            transaction_return != 0,
+        )
 
     def calc_sharp_ratio(self) -> float:
         if self.position_side == "Buy":
-            if self.first_fill:
-                logdiff = np.log(self.prices[self.i + 1] / self.lb)
-            elif self.last_fill:
-                logdiff = np.log(self.ls / self.prices[self.i])
-            else:
-                logdiff = np.log(self.prices[self.i + 1] / self.prices[self.i])
+            logdiff = np.log(self.prices[self.i + 1] / self.prices[self.i])
         elif self.position_side == "Sell":
-            if self.first_fill:
-                logdiff = np.log(self.ls / self.prices[self.i + 1])
-            elif self.last_fill:
-                logdiff = np.log(self.prices[self.i] / self.lb)
-            else:
-                logdiff = np.log(self.prices[self.i] / self.prices[self.i + 1])
+            logdiff = np.log(self.prices[self.i] / self.prices[self.i + 1])
         else:
             logdiff = np.log(1)
         return logdiff
+
+    def exceed_transaction(self) -> float:
+        if self.fb and self.fs:
+            transaction_return = self.ls / self.lb - 1
+            self.fb, self.fs = False, False
+            self.lb, self.ls = None, None
+            self.step_from_fb, self.step_from_fs = 0, 0
+            self.position_side = None
+            self.num_transaction_done += 1
+            return transaction_return
+        else:
+            raise Exception()
 
     @property
     def trader_state(self) -> List[float]:
@@ -181,24 +169,12 @@ class Market(object):
         return len(self.trader_state)
 
     def set_order_buy(self, price):
-        self.ob = True
+        self.fb = True
         self.lb = price
-        self.step_from_ob = 0
 
     def set_order_sell(self, price):
-        self.os = True
+        self.fs = True
         self.ls = price
-        self.step_from_os = 0
-
-    def unset_order_buy(self):
-        self.ob = False
-        self.lb = None
-        self.step_from_ob = 0
-
-    def unset_order_sell(self):
-        self.os = False
-        self.ls = None
-        self.step_from_os = 0
 
     def state(self) -> np.ndarray:
         trade_state = np.array(self.trader_state_que)
@@ -332,8 +308,10 @@ class MarketEnv(gym.Env):
         return observation
 
     def step(self, action_index: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
-        reward, done = self.market.step(action=action_index)
+        reward, done, transaction_done = self.market.step(action=action_index)
         observation = self.market.state()
+        if transaction_done:
+            self.market.reset_trader_state()
         return observation, reward, done, {}
 
     def render(self):
