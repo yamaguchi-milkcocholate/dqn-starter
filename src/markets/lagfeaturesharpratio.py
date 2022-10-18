@@ -253,7 +253,7 @@ class ActionParser(object):
         cat_action_dict = {
             0: ("Buy", 0.0),
             1: ("Sell", 0.0),
-            2: ("Hold", None),
+            2: ("Hold", 0.0),
         }
         return cat_action_dict
 
