@@ -11,6 +11,8 @@ from sklearn.preprocessing import RobustScaler
 from ta import add_all_ta_features
 import src.utils.tainvoke as tainvoke
 
+STATE_RANGE_MAX, STATE_RANGE_MIN = 10, -10
+
 
 def _load_bybit_data(rootdir: Path, interval: str):
     datadir = rootdir / "data" / "bybit" / interval
@@ -131,7 +133,7 @@ def load_bybit_data(
 
         scaler = RobustScaler(quantile_range=(5, 95))
         dfa[features] = scaler.fit_transform(dfa[features])
-        dfa[features] = np.clip(dfa[features], -1, 1)
+        dfa[features] = np.clip(dfa[features], STATE_RANGE_MIN, STATE_RANGE_MAX)
 
         dfa["fold"] = equal_divide_indice(length=dfa.shape[0], num_divide=num_divide)
         dfa = dfa[dfa.columns[~dfa.columns.str.startswith("_")]]

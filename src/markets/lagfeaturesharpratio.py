@@ -6,6 +6,7 @@ from collections import deque
 
 ACTION_DIM = 3
 TRADE_STATE_DIM = 5
+STATE_RANGE_MAX, STATE_RANGE_MIN = 10, -10
 
 
 class Market(object):
@@ -183,7 +184,9 @@ class Market(object):
         for i, (_trade, _market) in enumerate(
             zip(trade_state[::-1], market_state[::-1])
         ):
-            state_dict[f"state_{i}"] = np.clip(np.hstack([_trade, _market]), -1, 1)
+            state_dict[f"state_{i}"] = np.clip(
+                np.hstack([_trade, _market]), STATE_RANGE_MIN, STATE_RANGE_MAX
+            )
         return state_dict
 
     def get_return(self) -> pd.DataFrame:
@@ -285,8 +288,8 @@ class MarketEnv(gym.Env):
         dict_space = {}
         for i in range(n_lag):
             dict_space[f"state_{i}"] = gym.spaces.Box(
-                low=np.full(self.state_dim, -1).astype(np.float32),
-                high=np.full(self.state_dim, 1).astype(np.float32),
+                low=np.full(self.state_dim, STATE_RANGE_MIN).astype(np.float32),
+                high=np.full(self.state_dim, STATE_RANGE_MAX).astype(np.float32),
             )
         self.observation_space = gym.spaces.Dict(dict_space)
 
