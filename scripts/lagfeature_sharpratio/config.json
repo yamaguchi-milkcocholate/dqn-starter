@@ -4,15 +4,13 @@
             "features_extractor_class": "TimeAxisCombinedExtractor",
             "features_extractor_kwargs": {},
             "net_arch": [
-                256,
+                64,
                 {
                     "vf": [
-                        256,
-                        256
+                        64
                     ],
                     "pi": [
-                        256,
-                        256
+                        64
                     ]
                 }
             ]

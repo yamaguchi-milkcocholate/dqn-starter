@@ -26,8 +26,8 @@ def main(fold: int):
     df, features = data.load_bybit_data(
         num_divide=train_params["NUM_DIVIDE"],
         interval=train_params["MINUTES"],
-        # use_cache=False,
-        ta_config_file="config_mine.json",
+        use_cache=True,
+        ta_config_file="config.json",
     )
 
     df_train1, df_train2 = (
