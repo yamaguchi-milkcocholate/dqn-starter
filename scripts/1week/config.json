@@ -1,0 +1,31 @@
+{
+    "ppo_params": {
+        "policy_kwargs": {
+            "features_extractor_class": "TimeAxisCombinedExtractor",
+            "features_extractor_kwargs": {},
+            "net_arch": [
+                64,
+                {
+                    "vf": [
+                        64
+                    ],
+                    "pi": [
+                        64
+                    ]
+                }
+            ]
+        }
+    },
+    "train_params": {
+        "NUM_STEPS": 250000,
+        "EVAL_FREQ": 10000,
+        "UPDATE_INTERVAL": 50,
+        "N_LAG": 15,
+        "MINUTES": "1min"
+    },
+    "action_params": {},
+    "period": {
+        "NUM_TRIALS": 5,
+        "START": 1
+    }
+}

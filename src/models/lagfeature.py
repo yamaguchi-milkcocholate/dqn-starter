@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import *
+from copy import deepcopy
 
 import gym
 import torch
@@ -98,11 +99,11 @@ class TimeAxisCombinedExtractor(BaseFeaturesExtractor):
 def create_model(
     savedir: Path, env: markets.MarketEnv, ppo_params: Dict[str, Any] = {}
 ) -> PPO:
-
+    _ppo_params = deepcopy(ppo_params)
     if "policy_kwargs" not in ppo_params.keys():
         raise Exception("policy_kwargsが設定されていない")
     else:
-        pkwargs = ppo_params["policy_kwargs"]
+        pkwargs = _ppo_params["policy_kwargs"]
 
         if "features_extractor_class" not in pkwargs.keys():
             pkwargs["features_extractor_class"] = FeatureAxisCombinedExtractor
@@ -112,11 +113,11 @@ def create_model(
                 pkwargs["features_extractor_class"]
             ]
 
-        ppo_params["policy_kwargs"] = pkwargs
+        _ppo_params["policy_kwargs"] = pkwargs
 
-    print(ppo_params)
+    print(_ppo_params)
 
     logger = configure(str(savedir), ["stdout", "csv"])
-    model = PPO(policy=ActorCriticPolicy, env=env, verbose=1, **ppo_params)
+    model = PPO(policy=ActorCriticPolicy, env=env, verbose=1, **_ppo_params)
     model.set_logger(logger)
     return model

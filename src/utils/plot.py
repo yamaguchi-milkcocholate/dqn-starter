@@ -54,7 +54,7 @@ def eval_and_plot(model, market, savedir: Path):
     for i in range(market.num_steps):
         obs = market.state()
         action, _ = model.predict(obs)
-        reward, _ = market.step(action=action)
+        reward, _, _ = market.step(action=action)
         rewards.append(reward)
 
     result = market.get_return()

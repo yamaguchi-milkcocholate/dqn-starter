@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import pandas as pd
 import feather
@@ -145,6 +146,25 @@ def load_bybit_data(
     pprint(features)
 
     return dfa, features
+
+
+def arange_1week(
+    df: pd.DataFrame, evalday: int, interval: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if interval == "1min":
+        numrows = 288 * 1
+    elif interval == "5min":
+        numrows = 288 * 5
+    else:
+        raise ValueError()
+
+    df_train, df_eval = (
+        df.iloc[-(numrows * (evalday + 8)) : -(numrows * evalday)].reset_index(
+            drop=True
+        ),
+        df.iloc[-(numrows * evalday) :].reset_index(drop=True),
+    )
+    return df_train, df_eval
 
 
 def make_args(df: pd.DataFrame, ohlcv: str) -> Dict[str, pd.DataFrame]:
